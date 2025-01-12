@@ -1,54 +1,76 @@
 <template>
-  <div id="globalHeader">
-    <el-row>
-      <el-col :span="6">
-        <router-link to="/">
-          <div class="title-bar">
-            <img class="logo-pic" src="../assets/logo.png" alt="logo" />
-            <div class="title-name">智能云图库</div>
-          </div>
-        </router-link>
-      </el-col>
-      <el-col class="flex-1">
-
-      </el-col>
-      <el-col :span="3" class="ml-a">
-        <div class="user-login-status">
-          <el-button type="primary" tag="a" href="/user/login">登录</el-button>
+  <div
+    id="globalHeader"
+    class="w-full h-[50px] px-6 flex m-auto w-full items-center md:flex max-w-[1200px]"
+  >
+    <div>
+      <router-link to="/">
+        <div class="flex items-center mr-8">
+          <img class="logo-pic" src="../assets/logo.png" alt="logo" />
+          <div class="title-name">智能云图库</div>
         </div>
-      </el-col>
-    </el-row>
+      </router-link>
+    </div>
+    <el-menu
+      :default-active="activeIndex"
+      mode="horizontal"
+      :ellipsis="false"
+      v-for="item in items"
+      :key="item.key"
+      @select="handleSelect"
+    >
+      <el-menu-item :index="item.key">
+        <el-icon v-if="item.icon">
+          <component :is="item.icon" />
+        </el-icon>
+        <span>{{ item.label }}</span>
+      </el-menu-item>
+    </el-menu>
+    <div class="ml-auto h-full flex items-center">
+      <el-button href="/user/login" link class="!hover:text-black">登录</el-button>
+    </div>
   </div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const items = ref([
+  {
+    key: '/',
+    label: '首页',
+    icon: 'HomeFilled',
+  },
+  {
+    key: '/about',
+    label: '关于',
+  },
+])
+
+const activeIndex = ref('/')
+const router = useRouter()
+
+const handleSelect = (key: string, keyPath: string[]) => {
+  activeIndex.value = key
+  router.push({
+    path: key,
+  })
+}
+
+router.afterEach((to, from) => {
+  activeIndex.value = to.path
+})
+</script>
 
 <style scoped>
-#globalHeader {
-  padding-inline: 20px;
-}
-
-#globalHeader .logo-pic {
-  height: 48px;
-}
-
-#globalHeader .title-bar {
-  display: flex;
-  align-items: center;
-}
-
 #globalHeader .title-name {
   margin-left: 16px;
   font-size: 18px;
   color: black;
 }
 
-#globalHeader .user-login-status {
-  align-items: center;
-}
-
 a {
   text-decoration: none;
 }
-
 </style>
