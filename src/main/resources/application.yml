@@ -14,9 +14,15 @@ spring:
 
 mybatis-plus:
   configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-    map-underscore-to-camel-case: false
-  mapper-locations: classpath:mapper/*.xml
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 控制台打印sql日志
+    map-underscore-to-camel-case: false # 关闭下划线转驼峰
+  mapper-locations: classpath:mapper/*.xml # 扫描所有xml文件
+  global-config:
+    db-config:
+      id-type: assign_id # 主键生成策略 默认雪花算法
+      logic-delete-field: isDelete # 逻辑删除字段
+      logic-delete-value: 1 # 逻辑删除值
+      logic-not-delete-value: 0 # 逻辑未删除值
 
 # 端口
 server:
