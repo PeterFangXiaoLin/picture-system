@@ -1,8 +1,5 @@
 <template>
-  <div
-    id="globalHeader"
-    class="w-full h-[50px] px-6 flex m-auto w-full items-center md:flex max-w-[1200px]"
-  >
+  <div id="globalHeader" class="w-full h-[50px] flex items-center">
     <div>
       <router-link to="/">
         <div class="flex items-center mr-8">
@@ -27,7 +24,21 @@
       </el-menu-item>
     </el-menu>
     <div class="ml-auto h-full flex items-center">
-      <el-button href="/user/login" link class="!hover:text-black">登录</el-button>
+      <div v-if="loginUserStore.loginUser.id">
+        <el-dropdown trigger="click">
+          <el-avatar :size="50" :src="loginUserStore.loginUser.userAvatar ?? defaultAvatar" />
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item :icon="SwitchButton" @click="doLogout"> 退出登录 </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+      </div>
+      <div v-else class="flex items-center whitespace-nowrap">
+        <a href="/user/register" class="!hover:text-black c-coolGray">注册</a>
+        <span class="mx-3">或</span>
+        <a href="/user/login" class="!hover:text-black c-coolGray">登录</a>
+      </div>
     </div>
   </div>
 </template>
@@ -35,6 +46,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'
+import { userLogoutUsingPost } from '@/api/userController.ts'
+import { ElMessage } from 'element-plus'
+
+const loginUserStore = useLoginUserStore()
 
 const items = ref([
   {
@@ -51,11 +67,27 @@ const items = ref([
 const activeIndex = ref('/')
 const router = useRouter()
 
+const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+
 const handleSelect = (key: string, keyPath: string[]) => {
   activeIndex.value = key
   router.push({
     path: key,
   })
+}
+
+// 用户注销
+const doLogout = async () => {
+  const res = await userLogoutUsingPost()
+  if (res.data.code === 0) {
+    loginUserStore.setLoginUser({
+      userName: '未登录',
+    })
+    ElMessage.success('退出登录成功')
+    await router.push('/user/login')
+  } else {
+    ElMessage.error('退出登录失败，' + res.data.message)
+  }
 }
 
 router.afterEach((to, from) => {
@@ -72,5 +104,9 @@ router.afterEach((to, from) => {
 
 a {
   text-decoration: none;
+}
+
+.el-menu--horizontal.el-menu {
+  border-bottom: none;
 }
 </style>

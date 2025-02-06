@@ -1,16 +1,19 @@
 package com.my.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.my.common.DeleteRequest;
 import com.my.common.ErrorCode;
+import com.my.constant.CommonConstant;
 import com.my.constant.UserConstant;
-import com.my.controller.vo.user.UserLoginReqVO;
-import com.my.controller.vo.user.UserRegisterReqVO;
-import com.my.controller.vo.user.UserRespVO;
-import com.my.convert.UserConvert;
+import com.my.controller.vo.user.*;
 import com.my.domain.entity.User;
 import com.my.exception.BusinessException;
 import com.my.exception.ThrowUtils;
@@ -21,6 +24,8 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.my.constant.UserConstant.USER_LOGIN_STATE;
 
@@ -110,7 +115,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "用户不存在或密码错误");
         }
         // 脱敏用户信息
-        UserRespVO userRespVO = UserConvert.INSTANCE.userDOToUserRespVO(user);
+        UserRespVO userRespVO = BeanUtil.copyProperties(user, UserRespVO.class);
 
         // 记录用户的登录态
         request.getSession().setAttribute(USER_LOGIN_STATE, userRespVO);
@@ -132,7 +137,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "用户不存在");
         }
         // 脱敏用户信息
-        return UserConvert.INSTANCE.userDOToUserRespVO(user);
+        return BeanUtil.copyProperties(user, UserRespVO.class);
     }
 
     @Override
@@ -145,6 +150,93 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return true;
     }
 
+    @Override
+    public Long addUser(UserAddReqVO userAddReqVO) {
+        ThrowUtils.throwIf(ObjUtil.isNull(userAddReqVO), ErrorCode.PARAMS_ERROR);
+        // 校验账号是否重复
+        Long count = userMapper.selectCount(new LambdaQueryWrapper<User>()
+                .eq(User::getUserAccount, userAddReqVO.getUserAccount()));
+        ThrowUtils.throwIf(count > 0, ErrorCode.PARAMS_ERROR, "账号已存在");
+        User user = BeanUtil.copyProperties(userAddReqVO, User.class);
+        // 设置默认密码
+        user.setUserPassword(getEncryptPassword(UserConstant.DEFAULT_PASSWORD));
+        // 用户名为空时，设置默认用户名
+        if (StrUtil.isBlank(user.getUserName())) {
+            user.setUserName(UserConstant.DEFAULT_USER_NAME);
+        }
+        int insert = userMapper.insert(user);
+        ThrowUtils.throwIf(insert < 0, ErrorCode.SYSTEM_ERROR, "添加用户失败");
+        return user.getId();
+    }
+
+    @Override
+    public Boolean updateUser(UserUpdateReqVO userUpdateReqVO) {
+        ThrowUtils.throwIf(ObjUtil.isNull(userUpdateReqVO) || ObjUtil.isNull(userUpdateReqVO.getId()), ErrorCode.PARAMS_ERROR);
+        // 校验是否存在
+        validateUser(userUpdateReqVO.getId());
+        User user = BeanUtil.copyProperties(userUpdateReqVO, User.class);
+        int update = userMapper.updateById(user);
+        ThrowUtils.throwIf(update < 0, ErrorCode.SYSTEM_ERROR, "更新用户失败");
+        return true;
+    }
+
+    @Override
+    public Boolean deleteUser(DeleteRequest deleteRequest) {
+        ThrowUtils.throwIf(ObjUtil.isNull(deleteRequest) || ObjUtil.isNull(deleteRequest.getId()), ErrorCode.PARAMS_ERROR);
+        // 校验是否存在
+        validateUser(deleteRequest.getId());
+        int delete = userMapper.deleteById(deleteRequest.getId());
+        ThrowUtils.throwIf(delete < 0, ErrorCode.SYSTEM_ERROR, "删除用户失败");
+        return true;
+    }
+
+    @Override
+    public void validateUser(Long userId) {
+        ThrowUtils.throwIf(ObjUtil.isNull(userId), ErrorCode.PARAMS_ERROR, "用户不存在");
+        User user = userMapper.selectById(userId);
+        ThrowUtils.throwIf(ObjUtil.isNull(user), ErrorCode.PARAMS_ERROR, "用户不存在");
+    }
+
+    @Override
+    public User getUser(Long id) {
+        ThrowUtils.throwIf(ObjUtil.isNull(id) || id <= 0, ErrorCode.PARAMS_ERROR, "用户不存在");
+        User user = userMapper.selectById(id);
+        ThrowUtils.throwIf(ObjUtil.isNull(user), ErrorCode.PARAMS_ERROR, "用户不存在");
+        return user;
+    }
+
+    @Override
+    public UserRespVO getUserVO(Long id) {
+        ThrowUtils.throwIf(ObjUtil.isNull(id) || id <= 0, ErrorCode.PARAMS_ERROR, "用户不存在");
+        User user = userMapper.selectById(id);
+        ThrowUtils.throwIf(ObjUtil.isNull(user), ErrorCode.PARAMS_ERROR, "用户不存在");
+        return BeanUtil.copyProperties(user, UserRespVO.class);
+    }
+
+    @Override
+    public Page<UserRespVO> pageUserVO(UserQueryReqVO reqVO) {
+        ThrowUtils.throwIf(ObjUtil.isNull(reqVO), ErrorCode.PARAMS_ERROR);
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq(ObjUtil.isNotNull(reqVO.getId()), "id", reqVO.getId());
+        queryWrapper.eq(StrUtil.isNotBlank(reqVO.getUserRole()), "userRole", reqVO.getUserRole());
+        queryWrapper.like(StrUtil.isNotBlank(reqVO.getUserName()), "userName", reqVO.getUserName());
+        queryWrapper.like(StrUtil.isNotBlank(reqVO.getUserAccount()), "userAccount", reqVO.getUserAccount());
+        queryWrapper.like(StrUtil.isNotBlank(reqVO.getUserProfile()), "userProfile", reqVO.getUserProfile());
+        queryWrapper.orderBy(StrUtil.isNotEmpty(reqVO.getSortField()), reqVO.getSortOrder().equals(CommonConstant.SORT_ORDER_ASC), reqVO.getSortField());
+
+        Page<User> userPage = userMapper.selectPage(Page.of(reqVO.getCurrent(), reqVO.getPageSize()), queryWrapper);
+        Page<UserRespVO> userRespVOPage = new Page<>(reqVO.getCurrent(), reqVO.getPageSize(), userPage.getTotal());
+        userRespVOPage.setRecords(getUserVOList(userPage.getRecords()));
+        return userRespVOPage;
+    }
+
+    @Override
+    public List<UserRespVO> getUserVOList(List<User> userList) {
+        if (CollUtil.isEmpty(userList)) {
+            return CollUtil.newArrayList();
+        }
+        return userList.stream().map(user -> BeanUtil.copyProperties(user, UserRespVO.class)).collect(Collectors.toList());
+    }
 }
 
 

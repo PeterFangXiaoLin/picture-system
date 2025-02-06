@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import GlobalHeader from "@/components/GlobalHeader.vue";
+import GlobalHeader from '@/components/GlobalHeader.vue'
 </script>
 
 <style scoped>
@@ -22,6 +22,8 @@ import GlobalHeader from "@/components/GlobalHeader.vue";
   background: white;
   color: unset;
   margin-bottom: 16px;
+  margin-left: 24px;
+  margin-right: 24px;
 }
 
 #basicLayout .content {

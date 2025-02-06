@@ -1,12 +1,13 @@
 package com.my.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.my.controller.vo.user.UserLoginReqVO;
-import com.my.controller.vo.user.UserRegisterReqVO;
-import com.my.controller.vo.user.UserRespVO;
+import com.my.common.DeleteRequest;
+import com.my.controller.vo.user.*;
 import com.my.domain.entity.User;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
 * @author helloworld
@@ -56,4 +57,67 @@ public interface UserService extends IService<User> {
      * @return 是否注销成功
      */
     boolean userLogout(HttpServletRequest request);
+
+    /**
+     * 创建用户
+     *
+     * @param userAddReqVO 用户添加请求体
+     * @return 用户 id
+     */
+    Long addUser(UserAddReqVO userAddReqVO);
+
+    /**
+     * 更新用户
+     *
+     * @param userUpdateReqVO
+     * @return
+     */
+    Boolean updateUser(UserUpdateReqVO userUpdateReqVO);
+
+    /**
+     * 删除用户
+     *
+     * @param deleteRequest
+     * @return
+     */
+    Boolean deleteUser(DeleteRequest deleteRequest);
+
+    /**
+     * 校验用户
+     *
+     * @param userId
+     */
+    void validateUser(Long userId);
+
+    /**
+     * 根据 id 获取用户
+     *
+     * @param id
+     * @return
+     */
+    User getUser(Long id);
+
+    /**
+     * 根据 id 获取用户（脱敏）
+     *
+     * @param id
+     * @return
+     */
+    UserRespVO getUserVO(Long id);
+
+    /**
+     * 分页查询用户（脱敏）
+     *
+     * @param reqVO
+     * @return
+     */
+    Page<UserRespVO> pageUserVO(UserQueryReqVO reqVO);
+
+    /**
+     * userList to userVOList
+     *
+     * @param userList
+     * @return
+     */
+    List<UserRespVO> getUserVOList(List<User> userList);
 }
