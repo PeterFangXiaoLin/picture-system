@@ -1,23 +1,38 @@
 <template>
   <div class="user-manage-container">
     <!-- 搜索表单 -->
-    <el-card shadow="never">
+    <el-card shadow="never" class="mb-15px">
       <div>
-        <el-form :inline="true" :model="searchParams" class="search-form">
-          <el-form-item label="账号">
-            <el-input v-model="searchParams.userAccount" placeholder="输入账号" clearable />
-          </el-form-item>
-          <el-form-item label="用户名">
-            <el-input v-model="searchParams.userName" placeholder="输入用户名" clearable />
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="doSearch">搜索</el-button>
-          </el-form-item>
+        <el-form
+          :model="searchParams"
+          class="-mb-15px"
+          :inline="true"
+          label-width="68px"
+          size="large"
+        >
+          <el-row>
+            <el-col :span="4">
+              <el-form-item label="账号">
+                <el-input v-model="searchParams.userAccount" placeholder="输入账号" clearable />
+              </el-form-item>
+            </el-col>
+            <el-col :span="4">
+              <el-form-item label="用户名">
+                <el-input v-model="searchParams.userName" placeholder="输入用户名" clearable />
+              </el-form-item>
+            </el-col>
+            <el-col :span="5">
+              <el-form-item>
+                <el-button type="primary" :icon="Search" @click="doSearch">搜索</el-button>
+                <el-button plain type="primary" :icon="Plus" @click="openForm()">新增</el-button>
+              </el-form-item>
+            </el-col>
+          </el-row>
         </el-form>
       </div>
     </el-card>
 
-    <el-card shadow="never">
+    <el-card shadow="never" class="mb-15px">
       <!-- 用户表格 -->
       <el-table
         :data="dataList"
@@ -25,9 +40,9 @@
         v-loading="loading"
         :header-cell-style="{ 'background-color': '#ecf8fe', color: '#4986EA' }"
       >
-        <el-table-column prop="id" label="id" width="200" align="center"/>
+        <el-table-column prop="id" label="id" width="200" align="center" />
         <el-table-column prop="userAccount" label="账号" width="120" align="center" />
-        <el-table-column prop="userName" label="用户名" width="120" align="center"/>
+        <el-table-column prop="userName" label="用户名" width="120" align="center" />
         <el-table-column label="头像" width="120" align="center">
           <template #default="{ row }">
             <el-image
@@ -38,7 +53,7 @@
             />
           </template>
         </el-table-column>
-        <el-table-column prop="userProfile" label="简介" align="center"/>
+        <el-table-column prop="userProfile" label="简介" align="center" />
         <el-table-column label="用户角色" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="row.userRole === 'admin' ? 'success' : 'info'">
@@ -48,12 +63,29 @@
         </el-table-column>
         <el-table-column label="创建时间" width="180" align="center">
           <template #default="{ row }">
-            {{ dayjs(row.createTime).format('YYYY-MM-DD HH:mm:ss') }}
+            {{ dayjs(row.createTime).utc().format('YYYY-MM-DD HH:mm:ss') }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right" align="center">
+        <el-table-column label="操作" width="200" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button type="danger" link @click="handleDelete(row.id)"> 删除 </el-button>
+            <el-button link type="primary" @click="selectOpen(1, row.id)">
+              <el-icon>
+                <Edit />
+              </el-icon>
+              编辑
+            </el-button>
+            <el-button link type="primary" @click="selectOpen(2, row.id)">
+              <el-icon>
+                <View />
+              </el-icon>
+              查看
+            </el-button>
+            <el-button type="danger" link @click="handleDelete(row.id)">
+              <el-icon>
+                <Delete />
+              </el-icon>
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -73,17 +105,23 @@
       </div>
     </el-card>
   </div>
+
+  <UserInfoForm ref="formRef" @success="editSuccess" />
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { pageUserVoUsingPost, deleteUserUsingPost } from '@/api/userController'
-import dayjs from 'dayjs'
+import dayjs from '@/utils/dayjs'
+import { Delete, Plus, Search, Edit, View } from '@element-plus/icons-vue'
+import UserInfoForm from './UserInfoForm.vue'
 
 const loading = ref(false)
 const dataList = ref<API.UserRespVO[]>([])
 const total = ref(0)
+
+const formRef = ref()
 
 // 搜索参数
 const searchParams = reactive({
@@ -103,7 +141,6 @@ const fetchData = async () => {
     if (res.data.code === 0 && res.data.data) {
       dataList.value = res.data.data.records ?? []
       total.value = res.data.data.total ?? 0
-      console.log('total.value -->', total.value)
     } else {
       ElMessage.error(res.data.message || '获取数据失败')
     }
@@ -112,6 +149,11 @@ const fetchData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 新增
+const openForm = () => {
+  formRef.value?.open(0)
 }
 
 // 搜索
@@ -153,6 +195,17 @@ const handleDelete = async (id: string) => {
   }
 }
 
+// 打开编辑或查看弹窗
+const selectOpen = (type: number, id: string) => {
+  formRef.value?.open(type, id)
+}
+
+// 编辑成功
+const editSuccess = (msg: string) => {
+  ElMessage.success(msg)
+  fetchData()
+}
+
 // 页面加载时获取数据
 onMounted(() => {
   fetchData()
@@ -162,10 +215,6 @@ onMounted(() => {
 <style scoped>
 .user-manage-container {
   padding: 20px;
-}
-
-.search-form {
-  margin-bottom: 20px;
 }
 
 .pagination-container {

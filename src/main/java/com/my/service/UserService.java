@@ -120,4 +120,12 @@ public interface UserService extends IService<User> {
      * @return
      */
     List<UserRespVO> getUserVOList(List<User> userList);
+
+    /**
+     * 重置密码
+     *
+     * @param userResetPasswordReqVO
+     * @return
+     */
+    Boolean resetPassword(UserResetPasswordReqVO userResetPasswordReqVO);
 }

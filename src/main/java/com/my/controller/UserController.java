@@ -64,6 +64,17 @@ public class UserController {
     }
 
     /**
+     * 重设密码
+     *
+     * @param userResetPasswordReqVO
+     * @return
+     */
+    @PostMapping("/resetPassword")
+    public BaseResponse<Boolean> resetPassword(@RequestBody UserResetPasswordReqVO userResetPasswordReqVO) {
+        return success(userService.resetPassword(userResetPasswordReqVO));
+    }
+
+    /**
      * 根据id 获取用户 (仅管理员)
      * @param id
      * @return

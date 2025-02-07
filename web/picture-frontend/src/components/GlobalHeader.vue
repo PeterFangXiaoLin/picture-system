@@ -26,10 +26,11 @@
     <div class="ml-auto h-full flex items-center">
       <div v-if="loginUserStore.loginUser.id">
         <el-dropdown trigger="click">
-          <el-avatar :size="50" :src="loginUserStore.loginUser.userAvatar ?? defaultAvatar" />
+          <el-avatar :size="40" :src="loginUserStore.loginUser.userAvatar ?? defaultAvatar" />
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item :icon="SwitchButton" @click="doLogout"> 退出登录 </el-dropdown-item>
+              <el-dropdown-item :icon="User" @click="openUserInfo"> 个人信息</el-dropdown-item>
+              <el-dropdown-item :icon="SwitchButton" divided @click="doLogout"> 退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -44,25 +45,49 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import {computed, ref} from 'vue'
 import { useRouter } from 'vue-router'
 import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'
 import { userLogoutUsingPost } from '@/api/userController.ts'
 import { ElMessage } from 'element-plus'
+import { SwitchButton, User } from '@element-plus/icons-vue'
 
 const loginUserStore = useLoginUserStore()
 
-const items = ref([
+type Item = {
+  key: string
+  label: string
+  icon?: string
+}
+
+// 未经过过滤的菜单
+const originItems:Array<Item> = [
   {
     key: '/',
     label: '首页',
     icon: 'HomeFilled',
   },
   {
-    key: '/about',
-    label: '关于',
+    key: '/admin/userManage',
+    label: '用户管理',
   },
-])
+]
+
+// 根据权限过滤菜单
+const filterMenus = (menus = [] as Array<Item>) => {
+  return menus?.filter((menu) => {
+    // 管理员才能看到 /admin 开头的key的菜单
+    if (menu?.key?.startsWith('/admin')) {
+      const loginUser = loginUserStore.loginUser
+      if (!loginUser || loginUser.userRole !== 'admin') {
+        return false
+      }
+    }
+    return true
+  })
+}
+
+const items = computed(() => filterMenus(originItems))
 
 const activeIndex = ref('/')
 const router = useRouter()
@@ -74,6 +99,11 @@ const handleSelect = (key: string, keyPath: string[]) => {
   router.push({
     path: key,
   })
+}
+
+// 打开用户信息弹窗
+const openUserInfo = () => {
+  router.push('/user/info')
 }
 
 // 用户注销

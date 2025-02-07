@@ -27,7 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.my.constant.UserConstant.USER_LOGIN_STATE;
+import static com.my.constant.UserConstant.*;
 
 /**
 * @author helloworld
@@ -96,11 +96,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (StrUtil.hasBlank(userAccount, userPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
-        if (userAccount.length() < 4 || userAccount.length() > 16) {
+        if (userAccount.length() < minUserAccountLen || userAccount.length() > maxUserAccountLen) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号长度在 4-16 位");
         }
-        if (userPassword.length() < 8 || userPassword.length() > 16) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度在 8-16 位");
+        if (userPassword.length() < minPasswordLen || userPassword.length() > maxPasswordLen) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度在 8-20 位");
         }
         // 加密
         String encryptPassword = getEncryptPassword(userPassword);
@@ -236,6 +236,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             return CollUtil.newArrayList();
         }
         return userList.stream().map(user -> BeanUtil.copyProperties(user, UserRespVO.class)).collect(Collectors.toList());
+    }
+
+    @Override
+    public Boolean resetPassword(UserResetPasswordReqVO userResetPasswordReqVO) {
+        ThrowUtils.throwIf(ObjUtil.isNull(userResetPasswordReqVO) || ObjUtil.isNull(userResetPasswordReqVO.getId()), ErrorCode.PARAMS_ERROR);
+        // 校验是否存在
+        validateUser(userResetPasswordReqVO.getId());
+        String oldPassword = userResetPasswordReqVO.getOldPassword();
+        ThrowUtils.throwIf(StrUtil.isBlank(oldPassword) || oldPassword.length() < minPasswordLen || oldPassword.length() > maxPasswordLen, ErrorCode.PARAMS_ERROR, "旧密码错误");
+        String newPassword = userResetPasswordReqVO.getNewPassword();
+        ThrowUtils.throwIf(StrUtil.isBlank(newPassword) || newPassword.length() < minPasswordLen || newPassword.length() > maxPasswordLen, ErrorCode.PARAMS_ERROR, "密码长度在 8-20 位");
+        // todo
+//        User user = userMapper.selectById(userResetPasswordReqVO.getId());
+//        ThrowUtils.throwIf(getEncryptPassword(newPassword).equals());
+//        user.setUserPassword(getEncryptPassword(UserConstant.DEFAULT_PASSWORD));
+//        int update = userMapper.updateById(user);
+//        ThrowUtils.throwIf(update < 0, ErrorCode.SYSTEM_ERROR, "更新用户失败");
+        return true;
     }
 }
 

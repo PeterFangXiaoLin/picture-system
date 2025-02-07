@@ -16,6 +16,27 @@ public interface UserConstant {
      */
     String DEFAULT_PASSWORD = "12345678";
 
+    /**
+     * 最小账号长度
+     */
+    int minUserAccountLen = 4;
+
+    /**
+     * 最长账号长度
+     */
+    int maxUserAccountLen = 16;
+
+
+    /**
+     * 最小密码长度
+     */
+    int minPasswordLen = 8;
+
+    /**
+     * 最长密码长度
+     */
+    int maxPasswordLen = 20;
+
     //  region 权限
     /**
      * 默认角色
