@@ -125,7 +125,16 @@ public interface UserService extends IService<User> {
      * 重置密码
      *
      * @param userResetPasswordReqVO
+     * @param request
      * @return
      */
-    Boolean resetPassword(UserResetPasswordReqVO userResetPasswordReqVO);
+    Boolean resetPassword(UserResetPasswordReqVO userResetPasswordReqVO, HttpServletRequest request);
+
+    /**
+     * 编辑用户信息
+     *
+     * @param userEditReqVO
+     * @return
+     */
+    Boolean editUserInfo(UserEditReqVO userEditReqVO);
 }

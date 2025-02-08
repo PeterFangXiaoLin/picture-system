@@ -89,6 +89,13 @@ declare namespace API {
     userRole?: string
   }
 
+  type UserEditReqVO = {
+    id?: number
+    userAvatar?: string
+    userName?: string
+    userProfile?: string
+  }
+
   type UserLoginReqVO = {
     userAccount?: string
     userPassword?: string
@@ -110,6 +117,12 @@ declare namespace API {
     checkPassword?: string
     userAccount?: string
     userPassword?: string
+  }
+
+  type UserResetPasswordReqVO = {
+    id?: number
+    newPassword?: string
+    oldPassword?: string
   }
 
   type UserRespVO = {

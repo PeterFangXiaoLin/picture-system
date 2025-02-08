@@ -70,8 +70,19 @@ public class UserController {
      * @return
      */
     @PostMapping("/resetPassword")
-    public BaseResponse<Boolean> resetPassword(@RequestBody UserResetPasswordReqVO userResetPasswordReqVO) {
-        return success(userService.resetPassword(userResetPasswordReqVO));
+    public BaseResponse<Boolean> resetPassword(@RequestBody UserResetPasswordReqVO userResetPasswordReqVO, HttpServletRequest request) {
+        return success(userService.resetPassword(userResetPasswordReqVO, request));
+    }
+
+    /**
+     * 修改个人信息
+     *
+     * @param userEditReqVO
+     * @return
+     */
+    @PostMapping("/edit")
+    public BaseResponse<Boolean> editUserInfo(@RequestBody UserEditReqVO userEditReqVO) {
+        return success(userService.editUserInfo(userEditReqVO));
     }
 
     /**

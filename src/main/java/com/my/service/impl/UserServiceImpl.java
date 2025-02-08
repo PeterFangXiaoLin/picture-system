@@ -239,7 +239,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
-    public Boolean resetPassword(UserResetPasswordReqVO userResetPasswordReqVO) {
+    public Boolean resetPassword(UserResetPasswordReqVO userResetPasswordReqVO, HttpServletRequest request) {
         ThrowUtils.throwIf(ObjUtil.isNull(userResetPasswordReqVO) || ObjUtil.isNull(userResetPasswordReqVO.getId()), ErrorCode.PARAMS_ERROR);
         // 校验是否存在
         validateUser(userResetPasswordReqVO.getId());
@@ -247,12 +247,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         ThrowUtils.throwIf(StrUtil.isBlank(oldPassword) || oldPassword.length() < minPasswordLen || oldPassword.length() > maxPasswordLen, ErrorCode.PARAMS_ERROR, "旧密码错误");
         String newPassword = userResetPasswordReqVO.getNewPassword();
         ThrowUtils.throwIf(StrUtil.isBlank(newPassword) || newPassword.length() < minPasswordLen || newPassword.length() > maxPasswordLen, ErrorCode.PARAMS_ERROR, "密码长度在 8-20 位");
-        // todo
-//        User user = userMapper.selectById(userResetPasswordReqVO.getId());
-//        ThrowUtils.throwIf(getEncryptPassword(newPassword).equals());
-//        user.setUserPassword(getEncryptPassword(UserConstant.DEFAULT_PASSWORD));
-//        int update = userMapper.updateById(user);
-//        ThrowUtils.throwIf(update < 0, ErrorCode.SYSTEM_ERROR, "更新用户失败");
+        User user = userMapper.selectById(userResetPasswordReqVO.getId());
+        ThrowUtils.throwIf(!getEncryptPassword(oldPassword).equals(user.getUserPassword()), ErrorCode.PARAMS_ERROR, "旧密码错误");
+        String encryptNewPassword = getEncryptPassword(newPassword);
+        ThrowUtils.throwIf(encryptNewPassword.equals(user.getUserPassword()), ErrorCode.PARAMS_ERROR, "新密码不能与旧密码相同");
+        user.setUserPassword(encryptNewPassword);
+        int update = userMapper.updateById(user);
+        ThrowUtils.throwIf(update < 0, ErrorCode.SYSTEM_ERROR, "更新密码失败");
+        // 移除用户的登录态(默认认为用户已登录)
+        request.getSession().removeAttribute(USER_LOGIN_STATE);
+        return true;
+    }
+
+    @Override
+    public Boolean editUserInfo(UserEditReqVO userEditReqVO) {
+        ThrowUtils.throwIf(ObjUtil.isNull(userEditReqVO) || ObjUtil.isNull(userEditReqVO.getId()), ErrorCode.PARAMS_ERROR);
+        // 校验是否存在
+        validateUser(userEditReqVO.getId());
+        User user = BeanUtil.copyProperties(userEditReqVO, User.class);
+        int update = userMapper.updateById(user);
+        ThrowUtils.throwIf(update < 0, ErrorCode.SYSTEM_ERROR, "更新用户信息失败");
         return true;
     }
 }

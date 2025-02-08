@@ -10,19 +10,7 @@
             </div>
           </template>
           <div class="text-center">
-            <el-upload
-              class="avatar-uploader"
-              action="#"
-              :show-file-list="false"
-              :before-upload="beforeAvatarUpload"
-            >
-              <el-avatar
-                :size="120"
-                :src="loginUserStore.loginUser.userAvatar ?? defaultAvatar"
-                class="mb-4 cursor-pointer"
-              />
-              <div class="upload-tip">点击上传头像</div>
-            </el-upload>
+            <UserAvatar />
           </div>
           <ul class="list-group">
             <li class="list-group-item">
@@ -72,9 +60,6 @@
                 label-width="100px"
                 class="mt-4"
               >
-                <el-form-item label="用户账号" prop="userAccount">
-                  <el-input v-model="form.userAccount" disabled />
-                </el-form-item>
                 <el-form-item label="用户昵称" prop="userName">
                   <el-input v-model="form.userName" maxlength="30" />
                 </el-form-item>
@@ -145,7 +130,9 @@ import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { User, UserFilled, Management, Timer } from '@element-plus/icons-vue'
 import dayjs from '@/utils/dayjs'
-import { updateUserUsingPost } from '@/api/userController'
+import { editUserInfoUsingPost, resetPasswordUsingPost } from '@/api/userController'
+import { useRouter } from 'vue-router'
+import UserAvatar from '@/components/user/UserAvatar.vue'
 
 const loginUserStore = useLoginUserStore()
 const activeTab = ref('userinfo')
@@ -154,13 +141,10 @@ const pwdFormRef = ref<FormInstance>()
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 
 // 基本信息表单
-const form = reactive({
-  id: '',
-  userAccount: '',
+const form = reactive<API.UserEditReqVO>({
+  id: 0,
   userName: '',
-  userAvatar: '',
   userProfile: '',
-  userRole: ''
 })
 
 // 密码表单
@@ -213,9 +197,13 @@ const handleSubmit = async () => {
   await formRef.value.validate(async (valid) => {
     if (valid) {
       try {
-        await updateUserUsingPost(form)
-        ElMessage.success('修改成功')
-        loginUserStore.getLoginUser()
+        const res = await editUserInfoUsingPost(form)
+        if (res.data.code === 0 && res.data.data) {
+          ElMessage.success('修改成功')
+          loginUserStore.getLoginUser()
+        } else {
+          ElMessage.error('修改失败：' + res.data.message)
+        }
       } catch (error) {
         ElMessage.error('修改失败：' + error)
       }
@@ -229,14 +217,33 @@ const resetForm = () => {
   initForm()
 }
 
+const router = useRouter()
+
 // 更新密码
 const handleUpdatePwd = async () => {
   if (!pwdFormRef.value) return
   await pwdFormRef.value.validate(async (valid) => {
     if (valid) {
-      // TODO: 实现密码更新逻辑
-      ElMessage.success('密码修改成功')
-      resetPwdForm()
+      try {
+        const res = await resetPasswordUsingPost({
+          id: loginUserStore.loginUser.id,
+          oldPassword: pwdForm.oldPassword,
+          newPassword: pwdForm.newPassword
+        })
+        if (res.data.code === 0 && res.data.data) {
+          ElMessage.success('密码修改成功')
+          resetPwdForm()
+          // 自动退出登录
+          loginUserStore.setLoginUser({
+            userName: '未登录',
+          })
+          await router.push('/user/login')
+        } else {
+          ElMessage.error('密码修改失败：' + res.data.message)
+        }
+      } catch (error) {
+        ElMessage.error('密码修改失败：' + error)
+      }
     }
   })
 }
