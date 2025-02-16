@@ -10,6 +10,14 @@ spring:
   mvc:
     pathmatch:
       matching-strategy: ant_path_matcher
+  # 激活环境
+  profiles:
+    active: local
+  servlet:
+    multipart:
+      max-request-size: 50MB
+      max-file-size: 50MB
+
 
 
 mybatis-plus:

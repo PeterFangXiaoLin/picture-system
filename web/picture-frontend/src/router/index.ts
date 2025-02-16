@@ -6,6 +6,7 @@ import UserManagePage from '@/pages/admin/UserManagePage.vue'
 import UserInfoPage from '@/pages/user/UserInfoPage.vue'
 import ACCESS_ENUM from '@/access/accessEnum'
 import NoAuthPage from '@/error/NoAuthPage.vue'
+import AddPicturePage from '@/pages/picture/AddPicturePage.vue'
 
 export const routes = [
   {
@@ -18,24 +19,24 @@ export const routes = [
     name: '用户登录',
     component: UserLoginPage,
     meta: {
-      hideInMenu: true
-    }
+      hideInMenu: true,
+    },
   },
   {
     path: '/user/register',
     name: '用户注册',
     component: UserRegisterPage,
     meta: {
-      hideInMenu: true
-    }
+      hideInMenu: true,
+    },
   },
   {
     path: '/user/info',
     name: '用户信息',
     component: UserInfoPage,
     meta: {
-      hideInMenu: true
-    }
+      hideInMenu: true,
+    },
   },
   {
     path: '/admin/userManage',
@@ -49,6 +50,11 @@ export const routes = [
     path: '/401',
     name: '无权限',
     component: NoAuthPage,
+  },
+  {
+    path: '/add_picture',
+    name: '创建图片',
+    component: AddPicturePage,
   },
   {
     path: '/about',

@@ -53,13 +53,7 @@
           </template>
           <el-tabs v-model="activeTab">
             <el-tab-pane label="基本资料" name="userinfo">
-              <el-form
-                ref="formRef"
-                :model="form"
-                :rules="rules"
-                label-width="100px"
-                class="mt-4"
-              >
+              <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" class="mt-4">
                 <el-form-item label="用户昵称" prop="userName">
                   <el-input v-model="form.userName" maxlength="30" />
                 </el-form-item>
@@ -138,7 +132,6 @@ const loginUserStore = useLoginUserStore()
 const activeTab = ref('userinfo')
 const formRef = ref<FormInstance>()
 const pwdFormRef = ref<FormInstance>()
-const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 
 // 基本信息表单
 const form = reactive<API.UserEditReqVO>({
@@ -151,25 +144,23 @@ const form = reactive<API.UserEditReqVO>({
 const pwdForm = reactive({
   oldPassword: '',
   newPassword: '',
-  confirmPassword: ''
+  confirmPassword: '',
 })
 
 // 基本信息校验规则
 const rules = reactive<FormRules>({
   userName: [
     { required: true, message: '请输入用户昵称', trigger: 'blur' },
-    { min: 2, max: 30, message: '长度在 2 到 30 个字符', trigger: 'blur' }
-  ]
+    { min: 2, max: 30, message: '长度在 2 到 30 个字符', trigger: 'blur' },
+  ],
 })
 
 // 密码校验规则
 const pwdRules = reactive<FormRules>({
-  oldPassword: [
-    { required: true, message: '请输入旧密码', trigger: 'blur' }
-  ],
+  oldPassword: [{ required: true, message: '请输入旧密码', trigger: 'blur' }],
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 8, max: 20, message: '长度在 8 到 20 个字符', trigger: 'blur' }
+    { min: 8, max: 20, message: '长度在 8 到 20 个字符', trigger: 'blur' },
   ],
   confirmPassword: [
     { required: true, message: '请确认新密码', trigger: 'blur' },
@@ -181,9 +172,9 @@ const pwdRules = reactive<FormRules>({
           callback()
         }
       },
-      trigger: 'blur'
-    }
-  ]
+      trigger: 'blur',
+    },
+  ],
 })
 
 // 初始化表单数据
@@ -228,7 +219,7 @@ const handleUpdatePwd = async () => {
         const res = await resetPasswordUsingPost({
           id: loginUserStore.loginUser.id,
           oldPassword: pwdForm.oldPassword,
-          newPassword: pwdForm.newPassword
+          newPassword: pwdForm.newPassword,
         })
         if (res.data.code === 0 && res.data.data) {
           ElMessage.success('密码修改成功')

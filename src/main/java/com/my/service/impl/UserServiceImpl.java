@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -265,6 +266,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 校验是否存在
         validateUser(userEditReqVO.getId());
         User user = BeanUtil.copyProperties(userEditReqVO, User.class);
+        user.setEditTime(new Date());
         int update = userMapper.updateById(user);
         ThrowUtils.throwIf(update < 0, ErrorCode.SYSTEM_ERROR, "更新用户信息失败");
         return true;
