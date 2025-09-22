@@ -17,7 +17,7 @@ public class UserUpdateRequest implements Serializable {
     /**
      * id
      */
-    @ApiModelProperty(value = "id", dataType = "string")
+    @ApiModelProperty(value = "id")
     @NotNull
     private Long id;
 

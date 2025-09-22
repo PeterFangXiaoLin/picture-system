@@ -16,7 +16,7 @@ public class DeleteRequest implements Serializable {
     /**
      * id
      */
-    @ApiModelProperty(value = "id", dataType = "string")
+    @ApiModelProperty(value = "id")
     private Long id;
 
     private static final long serialVersionUID = 1L;

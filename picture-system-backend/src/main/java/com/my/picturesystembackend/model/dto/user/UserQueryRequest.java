@@ -19,7 +19,7 @@ public class UserQueryRequest extends PageRequest implements Serializable {
     /**
      * id
      */
-    @ApiModelProperty(value = "id", dataType = "string")
+    @ApiModelProperty(value = "id")
     private Long id;
 
     /**
