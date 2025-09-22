@@ -8,7 +8,7 @@ import lombok.Data;
  * 分页请求
  */
 @Data
-@ApiModel(value = "分页请求")
+@ApiModel(value = "PageRequest", description = "分页请求")
 public class PageRequest {
 
     /**

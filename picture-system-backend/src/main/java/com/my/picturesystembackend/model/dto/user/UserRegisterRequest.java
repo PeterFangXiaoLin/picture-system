@@ -12,7 +12,7 @@ import java.io.Serializable;
  * 用户注册请求体
  */
 @Data
-@ApiModel(value = "用户注册请求体")
+@ApiModel(value = "UserRegisterRequest", description = "用户注册请求体")
 public class UserRegisterRequest implements Serializable {
 
     private static final long serialVersionUID = -3963916550858845010L;

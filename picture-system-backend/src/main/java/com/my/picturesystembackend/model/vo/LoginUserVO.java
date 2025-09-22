@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
  * 脱敏后的用户信息
  */
 @Data
-@ApiModel(value = "脱敏后的用户信息")
+@ApiModel(value = "LoginUserVO", description = "脱敏后的用户信息")
 public class LoginUserVO implements Serializable {
 
     /**

@@ -13,7 +13,7 @@ import java.io.Serializable;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@ApiModel(value = "查询用户请求体")
+@ApiModel(value = "UserQueryRequest", description = "查询用户请求体")
 public class UserQueryRequest extends PageRequest implements Serializable {
 
     /**

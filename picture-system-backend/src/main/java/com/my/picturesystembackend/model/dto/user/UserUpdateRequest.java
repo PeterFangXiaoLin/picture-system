@@ -11,7 +11,7 @@ import java.io.Serializable;
  * 用户更新请求
  */
 @Data
-@ApiModel(value = "用户更新请求体")
+@ApiModel(value = "UserUpdateRequest", description = "用户更新请求体")
 public class UserUpdateRequest implements Serializable {
 
     /**

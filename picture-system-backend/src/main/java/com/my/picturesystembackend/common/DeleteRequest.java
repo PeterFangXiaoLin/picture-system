@@ -10,7 +10,7 @@ import java.io.Serializable;
  * 删除请求体
  */
 @Data
-@ApiModel(value = "删除请求体")
+@ApiModel(value = "DeleteRequest", description = "删除请求体")
 public class DeleteRequest implements Serializable {
 
     /**

@@ -11,7 +11,7 @@ import java.io.Serializable;
  * 用户添加请求体
  */
 @Data
-@ApiModel(value = "用户添加请求体")
+@ApiModel(value = "UserAddRequest", description = "用户添加请求体")
 public class UserAddRequest implements Serializable {
 
     /**
