@@ -1,5 +1,10 @@
 import HomePage from '@/pages/HomePage.vue'
 import { h } from 'vue'
+import { HomeOutlined } from '@ant-design/icons-vue'
+import UserLoginPage from '@/pages/user/UserLoginPage.vue'
+import UserRegisterPage from '@/pages/user/UserRegisterPage.vue'
+import UserManagePage from '@/pages/admin/UserManagePage.vue'
+import ACCESS_ENUM from '@/access/accessEnum.ts'
 
 const routes = [
   {
@@ -7,16 +12,32 @@ const routes = [
     name: '主页',
     component: HomePage,
     meta: {
-      icon: () => h('HomeOutlined'),
+      icon: () => h(HomeOutlined),
     }
   },
   {
-    path: '/about',
-    name: '关于',
-    // route level code-splitting
-    // this generates a separate chunk (About.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () => import('../pages/AboutView.vue'),
+    path: '/user/login',
+    name: '用户登录',
+    component: UserLoginPage,
+    meta: {
+      show: false
+    }
+  },
+  {
+    path: '/user/register',
+    name: '用户注册',
+    component: UserRegisterPage,
+    meta: {
+      show: false
+    }
+  },
+  {
+    path: '/admin/userManage',
+    name: '用户管理',
+    component: UserManagePage,
+    meta: {
+      authCheck: ACCESS_ENUM.ADMIN,
+    }
   },
 ]
 
