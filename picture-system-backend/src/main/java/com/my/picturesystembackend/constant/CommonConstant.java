@@ -1,4 +1,4 @@
-package com.my.picturesystembackend.common;
+package com.my.picturesystembackend.constant;
 
 /**
  * 通用常量

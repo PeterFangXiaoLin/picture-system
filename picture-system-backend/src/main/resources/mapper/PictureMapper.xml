@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.my.picturesystembackend.mapper.PictureMapper">
+
+    <resultMap id="BaseResultMap" type="com.my.picturesystembackend.model.entity.Picture">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="url" column="url" jdbcType="VARCHAR"/>
+            <result property="name" column="name" jdbcType="VARCHAR"/>
+            <result property="introduction" column="introduction" jdbcType="VARCHAR"/>
+            <result property="categoryId" column="categoryId" jdbcType="BIGINT"/>
+            <result property="tags" column="tags" jdbcType="VARCHAR"/>
+            <result property="picSize" column="picSize" jdbcType="BIGINT"/>
+            <result property="picWidth" column="picWidth" jdbcType="INTEGER"/>
+            <result property="picHeight" column="picHeight" jdbcType="INTEGER"/>
+            <result property="picScale" column="picScale" jdbcType="DOUBLE"/>
+            <result property="picFormat" column="picFormat" jdbcType="VARCHAR"/>
+            <result property="userId" column="userId" jdbcType="BIGINT"/>
+            <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+            <result property="editTime" column="editTime" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+            <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,url,name,introduction,categoryId,tags,picSize,
+        picWidth,picHeight,picScale,picFormat,userId,
+        createTime,editTime,updateTime,isDelete
+    </sql>
+
+    <!-- PictureVO 结果映射（普通用户） -->
+    <resultMap id="PictureVOResultMap" type="com.my.picturesystembackend.model.vo.PictureVO">
+        <id property="id" column="id"/>
+        <result property="url" column="url"/>
+        <result property="name" column="name"/>
+        <result property="introduction" column="introduction"/>
+        <result property="categoryId" column="categoryId"/>
+        <result property="tags" column="tags"/>
+        <result property="picSize" column="picSize"/>
+        <result property="picWidth" column="picWidth"/>
+        <result property="picHeight" column="picHeight"/>
+        <result property="picScale" column="picScale"/>
+        <result property="picFormat" column="picFormat"/>
+        <result property="userId" column="userId"/>
+        <result property="createTime" column="createTime"/>
+        <result property="editTime" column="editTime"/>
+        <result property="updateTime" column="updateTime"/>
+        
+        <!-- 关联分类信息 -->
+        <association property="category" javaType="com.my.picturesystembackend.model.vo.CategoryVO">
+            <id property="id" column="category_id"/>
+            <result property="name" column="category_name"/>
+            <result property="userId" column="category_userId"/>
+            <result property="createTime" column="category_createTime"/>
+            <result property="updateTime" column="category_updateTime"/>
+        </association>
+        
+        <!-- 关联创建用户信息 -->
+        <association property="user" javaType="com.my.picturesystembackend.model.vo.UserVO">
+            <id property="id" column="user_id"/>
+            <result property="userAccount" column="user_userAccount"/>
+            <result property="userName" column="user_userName"/>
+            <result property="userAvatar" column="user_userAvatar"/>
+            <result property="userProfile" column="user_userProfile"/>
+            <result property="userRole" column="user_userRole"/>
+            <result property="createTime" column="user_createTime"/>
+        </association>
+    </resultMap>
+
+    <!-- PictureAdminVO 结果映射（管理员） -->
+    <resultMap id="PictureAdminVOResultMap" type="com.my.picturesystembackend.model.vo.PictureAdminVO">
+        <id property="id" column="id"/>
+        <result property="url" column="url"/>
+        <result property="name" column="name"/>
+        <result property="introduction" column="introduction"/>
+        <result property="categoryId" column="categoryId"/>
+        <result property="tags" column="tags"/>
+        <result property="picSize" column="picSize"/>
+        <result property="picWidth" column="picWidth"/>
+        <result property="picHeight" column="picHeight"/>
+        <result property="picScale" column="picScale"/>
+        <result property="picFormat" column="picFormat"/>
+        <result property="userId" column="userId"/>
+        <result property="createTime" column="createTime"/>
+        <result property="editTime" column="editTime"/>
+        <result property="updateTime" column="updateTime"/>
+        <result property="isDelete" column="isDelete"/>
+
+        <!-- 关联分类信息 -->
+        <association property="category" javaType="com.my.picturesystembackend.model.vo.CategoryVO">
+            <id property="id" column="category_id"/>
+            <result property="name" column="category_name"/>
+            <result property="userId" column="category_userId"/>
+            <result property="createTime" column="category_createTime"/>
+            <result property="updateTime" column="category_updateTime"/>
+        </association>
+
+        <!-- 关联创建用户信息 -->
+        <association property="user" javaType="com.my.picturesystembackend.model.vo.UserVO">
+            <id property="id" column="user_id"/>
+            <result property="userAccount" column="user_userAccount"/>
+            <result property="userName" column="user_userName"/>
+            <result property="userAvatar" column="user_userAvatar"/>
+            <result property="userProfile" column="user_userProfile"/>
+            <result property="userRole" column="user_userRole"/>
+            <result property="createTime" column="user_createTime"/>
+        </association>
+    </resultMap>
+
+    <select id="getPictureAdminVO" resultMap="PictureAdminVOResultMap">
+        SELECT
+            a.id,
+            a.url,
+            a.name,
+            a.introduction,
+            a.categoryId,
+            a.picSize,
+            a.picWidth,
+            a.picHeight,
+            a.picScale,
+            a.picFormat,
+            a.userId,
+            a.createTime,
+            a.editTime,
+            a.updateTime,
+            a.isDelete,
+            b.id AS category_id,
+            b.name AS category_name,
+            b.userId AS category_userId,
+            b.createTime AS category_createTime,
+            b.updateTime AS category_updateTime,
+            c.id AS user_id,
+            c.userAccount AS user_userAccount,
+            c.userName AS user_userName,
+            c.userAvatar AS user_userAvatar,
+            c.userProfile AS user_userProfile,
+            c.userRole AS user_userRole,
+            c.createTime AS user_createTime
+        FROM
+            picture a
+        LEFT JOIN
+            category b ON a.categoryId = b.id AND b.isDelete = 0
+        LEFT JOIN
+            user c ON a.userId = c.id AND c.isDelete = 0
+        WHERE
+            a.id = #{id}
+        AND
+            a.isDelete = 0
+    </select>
+
+    <select id="listPictureAdminVOByPage" resultMap="PictureAdminVOResultMap">
+        SELECT
+            a.id,
+            a.url,
+            a.name,
+            a.introduction,
+            a.categoryId,
+            a.tags,
+            a.picSize,
+            a.picWidth,
+            a.picHeight,
+            a.picScale,
+            a.picFormat,
+            a.userId,
+            a.createTime,
+            a.editTime,
+            a.updateTime,
+            a.isDelete,
+            b.id AS category_id,
+            b.name AS category_name,
+            b.userId AS category_userId,
+            b.createTime AS category_createTime,
+            b.updateTime AS category_updateTime,
+            c.id AS user_id,
+            c.userAccount AS user_userAccount,
+            c.userName AS user_userName,
+            c.userAvatar AS user_userAvatar,
+            c.userProfile AS user_userProfile,
+            c.userRole AS user_userRole,
+            c.createTime AS user_createTime
+        FROM
+            picture a
+        LEFT JOIN
+            category b ON a.categoryId = b.id AND b.isDelete = 0
+        LEFT JOIN
+            user c ON a.userId = c.id AND c.isDelete = 0
+        <where>
+            a.isDelete = 0
+            <if test="req.id != null">
+                AND a.id = #{req.id}
+            </if>
+            <if test="req.name != null and req.name != ''">
+                AND a.name LIKE CONCAT('%', #{req.name}, '%')
+            </if>
+            <if test="req.introduction != null and req.introduction != ''">
+                AND a.introduction LIKE CONCAT('%', #{req.introduction}, '%')
+            </if>
+            <if test="req.categoryId != null">
+                AND a.categoryId = #{req.categoryId}
+            </if>
+            <if test="req.tags != null and req.tags.size() > 0">
+                AND (
+                    <foreach collection="req.tags" item="tagId" separator=" AND ">
+                        FIND_IN_SET(#{tagId}, a.tags)
+                    </foreach>
+                )
+            </if>
+            <if test="req.picSize != null">
+                AND a.picSize = #{req.picSize}
+            </if>
+            <if test="req.picWidth != null">
+                AND a.picWidth = #{req.picWidth}
+            </if>
+            <if test="req.picHeight != null">
+                AND a.picHeight = #{req.picHeight}
+            </if>
+            <if test="req.picScale != null">
+                AND a.picScale = #{req.picScale}
+            </if>
+            <if test="req.picFormat != null and req.picFormat != ''">
+                AND a.picFormat = #{req.picFormat}
+            </if>
+            <if test="req.userId != null">
+                AND a.userId = #{req.userId}
+            </if>
+            <if test="req.searchText != null and req.searchText != ''">
+                AND (a.name LIKE CONCAT('%', #{req.searchText}, '%')
+                     OR a.introduction LIKE CONCAT('%', #{req.searchText}, '%'))
+            </if>
+        </where>
+        <if test="req.sortField != null and req.sortField != ''">
+            ORDER BY ${req.sortField}
+            <if test="req.sortOrder != null and req.sortOrder == 'ascend'">
+                ASC
+            </if>
+            <if test="req.sortOrder == null or req.sortOrder != 'ascend'">
+                DESC
+            </if>
+        </if>
+    </select>
+    <select id="listPictureVOByPage" resultMap="PictureVOResultMap">
+        SELECT
+            a.id,
+            a.url,
+            a.name,
+            a.introduction,
+            a.categoryId,
+            a.tags,
+            a.picSize,
+            a.picWidth,
+            a.picHeight,
+            a.picScale,
+            a.picFormat,
+            a.userId,
+            a.createTime,
+            a.editTime,
+            a.updateTime,
+            b.id AS category_id,
+            b.name AS category_name,
+            b.userId AS category_userId,
+            b.createTime AS category_createTime,
+            b.updateTime AS category_updateTime,
+            c.id AS user_id,
+            c.userAccount AS user_userAccount,
+            c.userName AS user_userName,
+            c.userAvatar AS user_userAvatar,
+            c.userProfile AS user_userProfile,
+            c.userRole AS user_userRole,
+            c.createTime AS user_createTime
+        FROM
+            picture a
+        LEFT JOIN
+            category b ON a.categoryId = b.id AND b.isDelete = 0
+        LEFT JOIN
+            user c ON a.userId = c.id AND c.isDelete = 0
+        <where>
+            a.isDelete = 0
+            <if test="req.id != null">
+                AND a.id = #{req.id}
+            </if>
+            <if test="req.name != null and req.name != ''">
+                AND a.name LIKE CONCAT('%', #{req.name}, '%')
+            </if>
+            <if test="req.introduction != null and req.introduction != ''">
+                AND a.introduction LIKE CONCAT('%', #{req.introduction}, '%')
+            </if>
+            <if test="req.categoryId != null">
+                AND a.categoryId = #{req.categoryId}
+            </if>
+            <if test="req.tags != null and req.tags.size() > 0">
+                AND (
+                    <foreach collection="req.tags" item="tagId" separator=" AND ">
+                        FIND_IN_SET(#{tagId}, a.tags)
+                    </foreach>
+                )
+            </if>
+            <if test="req.picSize != null">
+                AND a.picSize = #{req.picSize}
+            </if>
+            <if test="req.picWidth != null">
+                AND a.picWidth = #{req.picWidth}
+            </if>
+            <if test="req.picHeight != null">
+                AND a.picHeight = #{req.picHeight}
+            </if>
+            <if test="req.picScale != null">
+                AND a.picScale = #{req.picScale}
+            </if>
+            <if test="req.picFormat != null and req.picFormat != ''">
+                AND a.picFormat = #{req.picFormat}
+            </if>
+            <if test="req.userId != null">
+                AND a.userId = #{req.userId}
+            </if>
+            <if test="req.searchText != null and req.searchText != ''">
+                AND (a.name LIKE CONCAT('%', #{req.searchText}, '%')
+                     OR a.introduction LIKE CONCAT('%', #{req.searchText}, '%'))
+            </if>
+        </where>
+        <if test="req.sortField != null and req.sortField != ''">
+            ORDER BY ${req.sortField}
+            <if test="req.sortOrder != null and req.sortOrder == 'ascend'">
+                ASC
+            </if>
+            <if test="req.sortOrder == null or req.sortOrder != 'ascend'">
+                DESC
+            </if>
+        </if>
+    </select>
+</mapper>

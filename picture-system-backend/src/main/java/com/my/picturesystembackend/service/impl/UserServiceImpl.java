@@ -7,7 +7,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.my.picturesystembackend.common.CommonConstant;
+import com.my.picturesystembackend.constant.CommonConstant;
 import com.my.picturesystembackend.common.DeleteRequest;
 import com.my.picturesystembackend.constant.UserConstant;
 import com.my.picturesystembackend.exception.BusinessException;
@@ -212,6 +212,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public String getEncryptedPassword(String password) {
         return DigestUtils.md5DigestAsHex((UserConstant.SALT + password).getBytes());
+    }
+
+    @Override
+    public boolean isAdmin(User user) {
+        return user != null && UserConstant.ADMIN_ROLE.equals(user.getUserRole());
     }
 }
 

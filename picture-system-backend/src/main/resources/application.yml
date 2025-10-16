@@ -16,6 +16,11 @@ spring:
   profiles:
     active: local
 
+  servlet:
+    multipart:
+      max-file-size: 50MB # 单个文件最大大小
+      max-request-size: 50MB # 整个请求最大总大小
+
 knife4j:
   enable: true
   openapi:
