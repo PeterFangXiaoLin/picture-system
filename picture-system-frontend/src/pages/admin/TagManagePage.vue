@@ -1,53 +1,26 @@
 <template>
-  <div id="user-manage-page">
+  <div id="tag-manage-page">
     <!-- 搜索表单 -->
     <div class="bg-white p-6 rounded-lg shadow-sm mb-4">
       <a-form :model="searchParams" @finish="doSearch">
-        <!-- 第一行：四个搜索条件 -->
-        <a-row :gutter="16">
+        <a-row :gutter="16" justify="space-between">
           <a-col :span="6">
-            <a-form-item label="用户账号">
+            <a-form-item label="标签名称">
               <a-input
-                v-model:value="searchParams.userAccount"
-                placeholder="请输入用户账号"
+                v-model:value="searchParams.name"
+                placeholder="请输入标签名称"
                 allowClear
               />
-            </a-form-item>
-          </a-col>
-          <a-col :span="6">
-            <a-form-item label="用户昵称">
-              <a-input
-                v-model:value="searchParams.userName"
-                placeholder="请输入用户昵称"
-                allowClear
-              />
-            </a-form-item>
-          </a-col>
-          <a-col :span="6">
-            <a-form-item label="用户角色">
-              <a-select
-                v-model:value="searchParams.userRole"
-                placeholder="请选择用户角色"
-                allowClear
-              >
-                <a-select-option value="user">用户</a-select-option>
-                <a-select-option value="admin">管理员</a-select-option>
-              </a-select>
             </a-form-item>
           </a-col>
           <a-col :span="6">
             <a-form-item label="排序字段">
               <a-select v-model:value="searchParams.sortField" placeholder="排序字段" allowClear>
                 <a-select-option value="createTime">创建时间</a-select-option>
-                <a-select-option value="userAccount">账号</a-select-option>
-                <a-select-option value="userName">昵称</a-select-option>
+                <a-select-option value="name">标签名称</a-select-option>
               </a-select>
             </a-form-item>
           </a-col>
-        </a-row>
-
-        <!-- 第二行：排序顺序和操作按钮 -->
-        <a-row :gutter="16" justify="space-between">
           <a-col :span="6">
             <a-form-item label="排序顺序">
               <a-select v-model:value="searchParams.sortOrder" placeholder="排序顺序" allowClear>
@@ -56,14 +29,14 @@
               </a-select>
             </a-form-item>
           </a-col>
-          <a-col :span="18" class="button-col">
+          <a-col :span="6" class="button-col">
             <a-form-item>
               <a-space size="middle">
-                <a-button type="primary" html-type="submit" :loading="loading"> 搜索 </a-button>
+                <a-button type="primary" html-type="submit" :loading="loading">搜索</a-button>
                 <a-button @click="doReset">重置</a-button>
-                <a-button type="primary" @click="showAddModal" class="add-user-btn">
+                <a-button type="primary" @click="showAddModal" class="add-btn">
                   <PlusOutlined />
-                  <span>新增用户</span>
+                  <span>新增</span>
                 </a-button>
               </a-space>
             </a-form-item>
@@ -72,7 +45,7 @@
       </a-form>
     </div>
 
-    <!-- 用户表格 -->
+    <!-- 标签表格 -->
     <div class="bg-white p-6 rounded-lg shadow-sm">
       <a-table
         :columns="columns"
@@ -81,23 +54,13 @@
         :loading="loading"
         row-key="id"
         @change="doTableChange"
-        :scroll="{ x: 1200 }"
       >
         <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'userAvatar'">
-            <a-avatar :src="record.userAvatar" size="small">
-              <template #icon>
-                <UserOutlined />
-              </template>
-            </a-avatar>
-          </template>
-          <template v-if="column.key === 'userRole'">
-            <a-tag :color="record.userRole === 'admin' ? 'red' : 'blue'">
-              {{ record.userRole === 'admin' ? '管理员' : '用户' }}
-            </a-tag>
-          </template>
           <template v-if="column.key === 'createTime'">
             {{ record.createTime ? dayjs(record.createTime).format('YYYY-MM-DD HH:mm:ss') : '-' }}
+          </template>
+          <template v-if="column.key === 'updateTime'">
+            {{ record.updateTime ? dayjs(record.updateTime).format('YYYY-MM-DD HH:mm:ss') : '-' }}
           </template>
           <template v-if="column.key === 'action'">
             <a-space>
@@ -106,7 +69,7 @@
                 <span>编辑</span>
               </a-button>
               <a-popconfirm
-                title="确定要删除此用户吗？"
+                title="确定要删除此标签吗？"
                 ok-text="确定"
                 cancel-text="取消"
                 @confirm="doDelete(record.id)"
@@ -122,33 +85,18 @@
       </a-table>
     </div>
 
-    <!-- 新增/编辑用户模态框 -->
+    <!-- 新增/编辑标签模态框 -->
     <a-modal
-      :title="isEdit ? '编辑用户' : '新增用户'"
+      :title="isEdit ? '编辑标签' : '新增标签'"
       :open="modalVisible"
       @ok="handleModalOk"
       @cancel="handleModalCancel"
       :confirm-loading="submitLoading"
-      width="600px"
+      width="500px"
     >
       <a-form ref="formRef" :model="formData" :rules="formRules" layout="vertical">
-        <a-form-item label="用户账号" name="userAccount" v-if="!isEdit">
-          <a-input v-model:value="formData.userAccount" placeholder="请输入用户账号" />
-        </a-form-item>
-        <a-form-item label="用户昵称" name="userName">
-          <a-input v-model:value="formData.userName" placeholder="请输入用户昵称" />
-        </a-form-item>
-        <a-form-item label="用户头像" name="userAvatar">
-          <a-input v-model:value="formData.userAvatar" placeholder="请输入头像URL" />
-        </a-form-item>
-        <a-form-item label="用户简介" name="userProfile">
-          <a-textarea v-model:value="formData.userProfile" placeholder="请输入用户简介" :rows="3" />
-        </a-form-item>
-        <a-form-item label="用户角色" name="userRole">
-          <a-select v-model:value="formData.userRole" placeholder="请选择用户角色">
-            <a-select-option value="user">用户</a-select-option>
-            <a-select-option value="admin">管理员</a-select-option>
-          </a-select>
+        <a-form-item label="标签名称" name="name">
+          <a-input v-model:value="formData.name" placeholder="请输入标签名称" />
         </a-form-item>
       </a-form>
     </a-modal>
@@ -158,22 +106,22 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons-vue'
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import {
-  listUserVoByPageUsingPost,
-  addUserUsingPost,
-  updateUserUsingPost,
-  deleteUserUsingPost,
-} from '@/api/userController'
+  listTagByPageUsingPost,
+  addTagUsingPost,
+  updateTagUsingPost,
+  deleteTagUsingPost,
+} from '@/api/tagController'
 import dayjs from 'dayjs'
 
 // 数据相关
-const dataList = ref<API.UserVO[]>([])
+const dataList = ref<API.TagVO[]>([])
 const total = ref(0)
 const loading = ref(false)
 
 // 搜索参数
-const searchParams = reactive<API.UserQueryRequest>({
+const searchParams = reactive<API.TagQueryRequest>({
   current: 1,
   pageSize: 10,
 })
@@ -185,22 +133,16 @@ const submitLoading = ref(false)
 const formRef = ref()
 
 // 表单数据
-const formData = reactive<API.UserAddRequest & API.UserUpdateRequest>({
-  userAccount: '',
-  userName: '',
-  userAvatar: '',
-  userProfile: '',
-  userRole: 'user',
+const formData = reactive<API.TagAddRequest & API.TagUpdateRequest>({
+  name: '',
 })
 
 // 表单验证规则
 const formRules = {
-  userAccount: [
-    { required: true, message: '请输入用户账号', trigger: 'blur' },
-    { min: 4, message: '用户账号至少4个字符', trigger: 'blur' },
+  name: [
+    { required: true, message: '请输入标签名称', trigger: 'blur' },
+    { min: 2, message: '标签名称至少2个字符', trigger: 'blur' },
   ],
-  userName: [{ required: true, message: '请输入用户昵称', trigger: 'blur' }],
-  userRole: [{ required: true, message: '请选择用户角色', trigger: 'change' }],
 }
 
 // 表格列配置
@@ -209,42 +151,23 @@ const columns = [
     title: 'ID',
     dataIndex: 'id',
     key: 'id',
-    width: 100,
+    width: 200,
     ellipsis: true,
   },
   {
-    title: '头像',
-    key: 'userAvatar',
-    width: 80,
-    align: 'center',
-  },
-  {
-    title: '用户账号',
-    dataIndex: 'userAccount',
-    key: 'userAccount',
-    width: 120,
-  },
-  {
-    title: '用户昵称',
-    dataIndex: 'userName',
-    key: 'userName',
-    width: 120,
-  },
-  {
-    title: '用户简介',
-    dataIndex: 'userProfile',
-    key: 'userProfile',
-    ellipsis: true,
-  },
-  {
-    title: '用户角色',
-    key: 'userRole',
-    width: 100,
-    align: 'center',
+    title: '标签名称',
+    dataIndex: 'name',
+    key: 'name',
+    width: 200,
   },
   {
     title: '创建时间',
     key: 'createTime',
+    width: 180,
+  },
+  {
+    title: '更新时间',
+    key: 'updateTime',
     width: 180,
   },
   {
@@ -268,7 +191,7 @@ const pagination = computed(() => ({
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await listUserVoByPageUsingPost(searchParams)
+    const res = await listTagByPageUsingPost(searchParams)
     if (res.data.code === 0 && res.data.data) {
       dataList.value = res.data.data.records ?? []
       total.value = res.data.data.total ?? 0
@@ -293,10 +216,7 @@ const doReset = () => {
   Object.assign(searchParams, {
     current: 1,
     pageSize: 10,
-    userAccount: undefined,
-    userName: undefined,
-    userProfile: undefined,
-    userRole: undefined,
+    name: undefined,
     sortField: undefined,
     sortOrder: undefined,
   })
@@ -318,15 +238,12 @@ const showAddModal = () => {
 }
 
 // 显示编辑模态框
-const showEditModal = (record: API.UserVO) => {
+const showEditModal = (record: API.TagVO) => {
   isEdit.value = true
   modalVisible.value = true
   Object.assign(formData, {
     id: record.id,
-    userName: record.userName,
-    userAvatar: record.userAvatar,
-    userProfile: record.userProfile,
-    userRole: record.userRole,
+    name: record.name,
   })
 }
 
@@ -334,11 +251,7 @@ const showEditModal = (record: API.UserVO) => {
 const resetForm = () => {
   Object.assign(formData, {
     id: undefined,
-    userAccount: '',
-    userName: '',
-    userAvatar: '',
-    userProfile: '',
-    userRole: 'user',
+    name: '',
   })
   formRef.value?.resetFields()
 }
@@ -351,22 +264,15 @@ const handleModalOk = async () => {
 
     let res
     if (isEdit.value) {
-      // 编辑用户
-      res = await updateUserUsingPost({
+      // 编辑标签
+      res = await updateTagUsingPost({
         id: formData.id,
-        userName: formData.userName,
-        userAvatar: formData.userAvatar,
-        userProfile: formData.userProfile,
-        userRole: formData.userRole,
+        name: formData.name,
       })
     } else {
-      // 新增用户
-      res = await addUserUsingPost({
-        userAccount: formData.userAccount,
-        userName: formData.userName,
-        userAvatar: formData.userAvatar,
-        userProfile: formData.userProfile,
-        userRole: formData.userRole,
+      // 新增标签
+      res = await addTagUsingPost({
+        name: formData.name,
       })
     }
 
@@ -390,12 +296,12 @@ const handleModalCancel = () => {
   resetForm()
 }
 
-// 删除用户
+// 删除标签
 const doDelete = async (id: string) => {
   if (!id) return
 
   try {
-    const res = await deleteUserUsingPost({ id })
+    const res = await deleteTagUsingPost({ id })
     if (res.data.code === 0) {
       message.success('删除成功')
       fetchData()
@@ -414,7 +320,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* TailwindCSS 已提供大部分样式 */
 :deep(.ant-table) {
   font-size: 14px;
 }
@@ -437,7 +342,6 @@ onMounted(() => {
   border-top: 1px solid #f0f0f0;
 }
 
-/* 操作按钮样式 */
 .action-btn {
   display: inline-flex !important;
   align-items: center !important;
@@ -449,18 +353,16 @@ onMounted(() => {
   line-height: 1;
 }
 
-/* 新增用户按钮图标和文字对齐 */
-.add-user-btn {
+.add-btn {
   display: inline-flex !important;
   align-items: center !important;
   gap: 4px;
 }
 
-.add-user-btn span {
+.add-btn span {
   line-height: 1;
 }
 
-/* 第二行按钮列对齐 */
 .button-col {
   display: flex;
   align-items: flex-end;

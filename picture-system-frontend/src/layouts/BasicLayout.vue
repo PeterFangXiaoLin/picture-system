@@ -1,11 +1,11 @@
 <template>
   <div id="basic-layout">
-    <a-layout class="min-h-screen">
+    <a-layout style="min-height: 100vh">
       <!-- 只在非身份认证页面显示导航栏 -->
       <a-layout-header v-if="!isAuthPage" class="header">
         <GlobalHeader />
       </a-layout-header>
-      <a-layout-content :class="isAuthPage ? '' : 'bg-linear-to-r from-[#efefef] to-[#fff]'">
+      <a-layout-content :class="isAuthPage ? '' : 'content'">
         <router-view />
       </a-layout-content>
     </a-layout>
@@ -30,10 +30,15 @@ const isAuthPage = computed(() => {
 
 <style scoped>
 #basic-layout .header {
+  padding-inline: 20px;
+  background: white;
   color: unset;
   margin-bottom: 16px;
-  background: white;
-  display: flex;
-  align-items: center;
+}
+
+#basic-layout .content {
+  padding: 3rem 6rem;
+  background: linear-gradient(to right, #fefefe, #fff);
+  margin-bottom: 28px;
 }
 </style>
