@@ -17,6 +17,10 @@
             <result property="picScale" column="picScale" jdbcType="DOUBLE"/>
             <result property="picFormat" column="picFormat" jdbcType="VARCHAR"/>
             <result property="userId" column="userId" jdbcType="BIGINT"/>
+            <result property="reviewStatus" column="reviewStatus" jdbcType="INTEGER"/>
+            <result property="reviewMessage" column="reviewMessage" jdbcType="VARCHAR"/>
+            <result property="reviewerId" column="reviewerId" jdbcType="BIGINT"/>
+            <result property="reviewTime" column="reviewTime" jdbcType="TIMESTAMP"/>
             <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
             <result property="editTime" column="editTime" jdbcType="TIMESTAMP"/>
             <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
@@ -26,6 +30,7 @@
     <sql id="Base_Column_List">
         id,url,name,introduction,categoryId,tags,picSize,
         picWidth,picHeight,picScale,picFormat,userId,
+        reviewStatus,reviewMessage,reviewerId,reviewTime,
         createTime,editTime,updateTime,isDelete
     </sql>
 
@@ -82,6 +87,10 @@
         <result property="picScale" column="picScale"/>
         <result property="picFormat" column="picFormat"/>
         <result property="userId" column="userId"/>
+        <result property="reviewStatus" column="reviewStatus"/>
+        <result property="reviewMessage" column="reviewMessage"/>
+        <result property="reviewerId" column="reviewerId"/>
+        <result property="reviewTime" column="reviewTime"/>
         <result property="createTime" column="createTime"/>
         <result property="editTime" column="editTime"/>
         <result property="updateTime" column="updateTime"/>
@@ -121,6 +130,10 @@
             a.picScale,
             a.picFormat,
             a.userId,
+            a.reviewStatus,
+            a.reviewMessage,
+            a.reviewerId,
+            a.reviewTime,
             a.createTime,
             a.editTime,
             a.updateTime,
@@ -163,6 +176,10 @@
             a.picScale,
             a.picFormat,
             a.userId,
+            a.reviewStatus,
+            a.reviewMessage,
+            a.reviewerId,
+            a.reviewTime,
             a.createTime,
             a.editTime,
             a.updateTime,
@@ -223,6 +240,15 @@
             </if>
             <if test="req.userId != null">
                 AND a.userId = #{req.userId}
+            </if>
+            <if test="req.reviewStatus != null">
+                AND a.reviewStatus = #{req.reviewStatus}
+            </if>
+            <if test="req.reviewMessage != null and req.reviewMessage != ''">
+                AND a.reviewMessage LIKE CONCAT('%', #{req.reviewMessage}, '%')
+            </if>
+            <if test="req.reviewerId != null">
+                AND a.reviewerId = #{req.reviewerId}
             </if>
             <if test="req.searchText != null and req.searchText != ''">
                 AND (a.name LIKE CONCAT('%', #{req.searchText}, '%')
@@ -312,6 +338,15 @@
             </if>
             <if test="req.userId != null">
                 AND a.userId = #{req.userId}
+            </if>
+            <if test="req.reviewStatus != null">
+                AND a.reviewStatus = #{req.reviewStatus}
+            </if>
+            <if test="req.reviewMessage != null and req.reviewMessage != ''">
+                AND a.reviewMessage LIKE CONCAT('%', #{req.reviewMessage}, '%')
+            </if>
+            <if test="req.reviewerId != null">
+                AND a.reviewerId = #{req.reviewerId}
             </if>
             <if test="req.searchText != null and req.searchText != ''">
                 AND (a.name LIKE CONCAT('%', #{req.searchText}, '%')

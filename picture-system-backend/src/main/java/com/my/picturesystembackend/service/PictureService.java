@@ -4,14 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.my.picturesystembackend.common.DeleteRequest;
-import com.my.picturesystembackend.model.dto.picture.PictureEditRequest;
-import com.my.picturesystembackend.model.dto.picture.PictureQueryRequest;
-import com.my.picturesystembackend.model.dto.picture.PictureUpdateRequest;
-import com.my.picturesystembackend.model.dto.picture.PictureUploadRequest;
+import com.my.picturesystembackend.model.dto.picture.*;
 import com.my.picturesystembackend.model.entity.Picture;
+import com.my.picturesystembackend.model.entity.User;
 import com.my.picturesystembackend.model.vo.PictureAdminVO;
 import com.my.picturesystembackend.model.vo.PictureVO;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -31,12 +28,12 @@ public interface PictureService extends IService<Picture> {
     /**
      * 上传图片
      *
-     * @param multipartFile file
+     * @param inputSource 输入源
      * @param pictureUploadRequest request
-     * @param request request
+     * @param request              request
      * @return PictureVO
      */
-    PictureVO uploadPicture(MultipartFile multipartFile,
+    PictureVO uploadPicture(Object inputSource,
                             PictureUploadRequest pictureUploadRequest,
                             HttpServletRequest request);
 
@@ -53,9 +50,10 @@ public interface PictureService extends IService<Picture> {
      * 更新图片
      *
      * @param pictureUpdateRequest 更新图片请求
+     * @param request request
      * @return 是否更新成功
      */
-    boolean updatePicture(PictureUpdateRequest pictureUpdateRequest);
+    boolean updatePicture(PictureUpdateRequest pictureUpdateRequest, HttpServletRequest request);
 
     /**
      * 获取图片管理员封装
@@ -103,6 +101,14 @@ public interface PictureService extends IService<Picture> {
     Page<PictureVO> listPictureVOByPage(PictureQueryRequest pictureQueryRequest);
 
     /**
+     * 分页获取 pictureVO 缓存版
+     *
+     * @param pictureQueryRequest pictureQueryRequest
+     * @return pictureVO list
+     */
+    Page<PictureVO> listPictureVOByPageWithCache(PictureQueryRequest pictureQueryRequest);
+
+    /**
      * 编辑图片
      *
      * @param pictureEditRequest 编辑图片请求
@@ -110,4 +116,44 @@ public interface PictureService extends IService<Picture> {
      * @return 是否编辑成功
      */
     boolean editPicture(PictureEditRequest pictureEditRequest, HttpServletRequest request);
+
+    /**
+     * 图片审核
+     *
+     * @param pictureReviewRequest 图片审核请求
+     * @param request request
+     */
+    void doPictureReview(PictureReviewRequest pictureReviewRequest, HttpServletRequest request);
+
+    /**
+     * 填充审核参数
+     * 图片上传，用户编辑，管理员更新都需要重置审核参数
+     *
+     * @param picture picture
+     * @param loginUser loginUser
+     */
+    void fillReviewParams(Picture picture, User loginUser);
+
+    /**
+     * 批量上传图片
+     *
+     * @param pictureUploadByBatchRequest 批量上传图片请求
+     * @param request request
+     * @return 批量上传图片数量
+     */
+    Integer uploadPictureByBatch(PictureUploadByBatchRequest pictureUploadByBatchRequest, HttpServletRequest request);
+
+    /**
+     * 清除图片缓存
+     *
+     * @param pictureId 图片id
+     */
+    void clearPictureCache(Long pictureId);
+
+    /**
+     * 异步清除图片缓存
+     *
+     * @param pictureId 图片id
+     */
+    void asyncDeleteCache(Long pictureId);
 }
