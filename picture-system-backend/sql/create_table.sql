@@ -24,32 +24,32 @@ create table if not exists user
 -- 分类表
 create table if not exists category
 (
-    id          bigint comment 'id' primary key,
-    name        varchar(128)                       not null comment '分类名称',
-    userId      bigint                             not null comment '创建用户 id',
-    createTime  datetime default CURRENT_TIMESTAMP not null comment '创建时间',
-    editTime    datetime default CURRENT_TIMESTAMP not null comment '编辑时间', 
-    updateTime  datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    isDelete    tinyint  default 0                 not null comment '是否删除',
-    INDEX idx_name (name),                 -- 提升基于分类名称的查询性能
-    INDEX idx_userId (userId),             -- 提升基于用户 ID 的查询性能
-    INDEX idx_createTime (createTime),     -- 提升基于创建时间的查询性能
+    id         bigint comment 'id' primary key,
+    name       varchar(128)                       not null comment '分类名称',
+    userId     bigint                             not null comment '创建用户 id',
+    createTime datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    editTime   datetime default CURRENT_TIMESTAMP not null comment '编辑时间',
+    updateTime datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete   tinyint  default 0                 not null comment '是否删除',
+    INDEX idx_name (name),                   -- 提升基于分类名称的查询性能
+    INDEX idx_userId (userId),               -- 提升基于用户 ID 的查询性能
+    INDEX idx_createTime (createTime),       -- 提升基于创建时间的查询性能
     UNIQUE KEY uk_name_userId (name, userId) -- 同一用户下分类名称唯一
 ) comment '图片分类' collate = utf8mb4_unicode_ci;
 
 -- 标签表
 create table if not exists tag
 (
-    id          bigint comment 'id' primary key,
-    name        varchar(128)                       not null comment '标签名称',
-    userId      bigint                             not null comment '创建用户 id',
-    createTime  datetime default CURRENT_TIMESTAMP not null comment '创建时间',
-    editTime    datetime default CURRENT_TIMESTAMP not null comment '编辑时间',
-    updateTime  datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    isDelete    tinyint  default 0                 not null comment '是否删除',
-    INDEX idx_name (name),                 -- 提升基于标签名称的查询性能
-    INDEX idx_userId (userId),             -- 提升基于用户 ID 的查询性能
-    INDEX idx_createTime (createTime),     -- 提升基于创建时间的查询性能
+    id         bigint comment 'id' primary key,
+    name       varchar(128)                       not null comment '标签名称',
+    userId     bigint                             not null comment '创建用户 id',
+    createTime datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    editTime   datetime default CURRENT_TIMESTAMP not null comment '编辑时间',
+    updateTime datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete   tinyint  default 0                 not null comment '是否删除',
+    INDEX idx_name (name),                   -- 提升基于标签名称的查询性能
+    INDEX idx_userId (userId),               -- 提升基于用户 ID 的查询性能
+    INDEX idx_createTime (createTime),       -- 提升基于创建时间的查询性能
     UNIQUE KEY uk_name_userId (name, userId) -- 同一用户下标签名称唯一
 ) comment '图片标签' collate = utf8mb4_unicode_ci;
 
@@ -83,10 +83,30 @@ ALTER TABLE picture
 
 ALTER TABLE picture
     -- 添加新列
-    ADD COLUMN reviewStatus INT DEFAULT 0 NOT NULL COMMENT '审核状态：0-待审核; 1-通过; 2-拒绝',
-    ADD COLUMN reviewMessage VARCHAR(512) NULL COMMENT '审核信息',
-    ADD COLUMN reviewerId BIGINT NULL COMMENT '审核人 ID',
-    ADD COLUMN reviewTime DATETIME NULL COMMENT '审核时间';
+    ADD COLUMN reviewStatus  INT DEFAULT 0 NOT NULL COMMENT '审核状态：0-待审核; 1-通过; 2-拒绝',
+    ADD COLUMN reviewMessage VARCHAR(512)  NULL COMMENT '审核信息',
+    ADD COLUMN reviewerId    BIGINT        NULL COMMENT '审核人 ID',
+    ADD COLUMN reviewTime    DATETIME      NULL COMMENT '审核时间';
 
 -- 创建基于 reviewStatus 列的索引
 CREATE INDEX idx_reviewStatus ON picture (reviewStatus);
+
+-- 增加压缩图url列
+ALTER TABLE picture
+    -- 添加新列
+    ADD COLUMN compressedUrl varchar(512) NULL COMMENT '压缩图 url';
+
+-- 增加点赞数量列
+ALTER TABLE picture
+    -- 添加新列
+    ADD COLUMN thumbCount INT DEFAULT 0 NOT NULL COMMENT '点赞数量';
+
+-- 点赞记录表
+create table if not exists thumb
+(
+    id         bigint primary key comment 'id',
+    userId     bigint                             not null comment '用户id',
+    pictureId  bigint                             not null comment '图片id',
+    createTime datetime default CURRENT_TIMESTAMP not null comment '创建时间'
+) comment '点赞记录表' collate = utf8mb4_unicode_ci;
+create unique index idx_userId_blogId on thumb (userId, pictureId);

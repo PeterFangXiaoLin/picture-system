@@ -80,6 +80,14 @@ const routes = [
       show: false
     }
   },
+  {
+    path: '/add_picture/batch',
+    name: '批量创建图片',
+    component: () => import('@/pages/AddPictureBatchPage.vue'),
+    meta: {
+      authCheck: ACCESS_ENUM.ADMIN,
+    }
+  },
 ]
 
 export default routes

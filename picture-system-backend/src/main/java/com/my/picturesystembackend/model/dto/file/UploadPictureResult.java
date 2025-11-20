@@ -15,7 +15,13 @@ public class UploadPictureResult {
      * 图片地址  
      */
     @ApiModelProperty(value = "图片地址")
-    private String url;  
+    private String url;
+
+    /**
+     * 压缩图 url
+     */
+    @ApiModelProperty(value = "压缩图 url")
+    private String compressedUrl;
   
     /**  
      * 图片名称  

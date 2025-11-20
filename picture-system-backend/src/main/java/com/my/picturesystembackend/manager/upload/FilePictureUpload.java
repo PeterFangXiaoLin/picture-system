@@ -1,7 +1,7 @@
 package com.my.picturesystembackend.manager.upload;
 
 import cn.hutool.core.io.FileUtil;
-import com.my.picturesystembackend.cofig.CosClientConfig;
+import com.my.picturesystembackend.config.CosClientConfig;
 import com.my.picturesystembackend.exception.ErrorCode;
 import com.my.picturesystembackend.exception.ThrowUtils;
 import com.my.picturesystembackend.manager.CosManager;

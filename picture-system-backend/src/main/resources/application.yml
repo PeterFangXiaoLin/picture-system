@@ -2,6 +2,10 @@ server:
   port: 9090
   servlet:
     context-path: /api
+    # cookie 30 天过期
+    session:
+      cookie:
+        max-age: 2592000
 
 spring:
   application:
@@ -18,6 +22,8 @@ spring:
     host: 127.0.0.1
     port: 6379
     timeout: 5000
+    redisson:
+      file: classpath:redisson.yaml
     # Lettuce连接池配置（Spring Boot 2.x 默认）
     lettuce:
       pool:
@@ -37,6 +43,12 @@ spring:
     multipart:
       max-file-size: 50MB # 单个文件最大大小
       max-request-size: 50MB # 整个请求最大总大小
+
+  # session 配置
+  session:
+    store-type: redis
+    #  session 过期时间30天
+    timeout: 2592000
 
 knife4j:
   enable: true

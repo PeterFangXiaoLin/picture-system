@@ -25,7 +25,13 @@ public class PictureVO implements Serializable {
      * 图片 url  
      */
     @ApiModelProperty(value = "图片 url")
-    private String url;  
+    private String url;
+
+    /**
+     * 压缩图 url
+     */
+    @ApiModelProperty(value = "压缩图 url")
+    private String compressedUrl;
   
     /**  
      * 图片名称  
@@ -91,8 +97,14 @@ public class PictureVO implements Serializable {
      * 图片格式  
      */
     @ApiModelProperty(value = "图片格式")
-    private String picFormat;  
-  
+    private String picFormat;
+
+    /**
+     * 点赞数量
+     */
+    @ApiModelProperty(value = "点赞数量")
+    private Integer thumbCount;
+
     /**  
      * 用户 id  
      */
@@ -121,7 +133,13 @@ public class PictureVO implements Serializable {
      * 创建用户信息  
      */
     @ApiModelProperty(value = "创建用户信息")
-    private UserVO user;  
+    private UserVO user;
+
+    /**
+     * 是否已点赞
+     */
+    @ApiModelProperty(value = "是否已点赞")
+    private Boolean hasThumb;
 
     private static final long serialVersionUID = 1L;
 }

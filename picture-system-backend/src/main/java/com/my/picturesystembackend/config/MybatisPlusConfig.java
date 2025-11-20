@@ -1,4 +1,4 @@
-package com.my.picturesystembackend.cofig;
+package com.my.picturesystembackend.config;
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;

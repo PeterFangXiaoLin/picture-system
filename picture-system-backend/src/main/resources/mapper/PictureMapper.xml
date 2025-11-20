@@ -7,6 +7,7 @@
     <resultMap id="BaseResultMap" type="com.my.picturesystembackend.model.entity.Picture">
             <id property="id" column="id" jdbcType="BIGINT"/>
             <result property="url" column="url" jdbcType="VARCHAR"/>
+            <result property="compressedUrl" column="compressedUrl" jdbcType="VARCHAR"/>
             <result property="name" column="name" jdbcType="VARCHAR"/>
             <result property="introduction" column="introduction" jdbcType="VARCHAR"/>
             <result property="categoryId" column="categoryId" jdbcType="BIGINT"/>
@@ -16,6 +17,7 @@
             <result property="picHeight" column="picHeight" jdbcType="INTEGER"/>
             <result property="picScale" column="picScale" jdbcType="DOUBLE"/>
             <result property="picFormat" column="picFormat" jdbcType="VARCHAR"/>
+            <result property="thumbCount" column="thumbCount" jdbcType="INTEGER"/>
             <result property="userId" column="userId" jdbcType="BIGINT"/>
             <result property="reviewStatus" column="reviewStatus" jdbcType="INTEGER"/>
             <result property="reviewMessage" column="reviewMessage" jdbcType="VARCHAR"/>
@@ -28,8 +30,8 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,url,name,introduction,categoryId,tags,picSize,
-        picWidth,picHeight,picScale,picFormat,userId,
+        id,url,compressedUrl,name,introduction,categoryId,tags,picSize,
+        picWidth,picHeight,picScale,picFormat,thumbCount,userId,
         reviewStatus,reviewMessage,reviewerId,reviewTime,
         createTime,editTime,updateTime,isDelete
     </sql>
@@ -38,6 +40,7 @@
     <resultMap id="PictureVOResultMap" type="com.my.picturesystembackend.model.vo.PictureVO">
         <id property="id" column="id"/>
         <result property="url" column="url"/>
+        <result property="compressedUrl" column="compressedUrl"/>
         <result property="name" column="name"/>
         <result property="introduction" column="introduction"/>
         <result property="categoryId" column="categoryId"/>
@@ -47,6 +50,7 @@
         <result property="picHeight" column="picHeight"/>
         <result property="picScale" column="picScale"/>
         <result property="picFormat" column="picFormat"/>
+        <result property="thumbCount" column="thumbCount"/>
         <result property="userId" column="userId"/>
         <result property="createTime" column="createTime"/>
         <result property="editTime" column="editTime"/>
@@ -77,6 +81,7 @@
     <resultMap id="PictureAdminVOResultMap" type="com.my.picturesystembackend.model.vo.PictureAdminVO">
         <id property="id" column="id"/>
         <result property="url" column="url"/>
+        <result property="compressedUrl" column="compressedUrl"/>
         <result property="name" column="name"/>
         <result property="introduction" column="introduction"/>
         <result property="categoryId" column="categoryId"/>
@@ -86,6 +91,7 @@
         <result property="picHeight" column="picHeight"/>
         <result property="picScale" column="picScale"/>
         <result property="picFormat" column="picFormat"/>
+        <result property="thumbCount" column="thumbCount"/>
         <result property="userId" column="userId"/>
         <result property="reviewStatus" column="reviewStatus"/>
         <result property="reviewMessage" column="reviewMessage"/>
@@ -121,6 +127,7 @@
         SELECT
             a.id,
             a.url,
+            a.compressedUrl,
             a.name,
             a.introduction,
             a.categoryId,
@@ -129,6 +136,7 @@
             a.picHeight,
             a.picScale,
             a.picFormat,
+            a.thumbCount,
             a.userId,
             a.reviewStatus,
             a.reviewMessage,
@@ -166,6 +174,7 @@
         SELECT
             a.id,
             a.url,
+            a.compressedUrl,
             a.name,
             a.introduction,
             a.categoryId,
@@ -175,6 +184,7 @@
             a.picHeight,
             a.picScale,
             a.picFormat,
+            a.thumbCount,
             a.userId,
             a.reviewStatus,
             a.reviewMessage,
@@ -269,6 +279,7 @@
         SELECT
             a.id,
             a.url,
+            a.compressedUrl,
             a.name,
             a.introduction,
             a.categoryId,
@@ -278,6 +289,7 @@
             a.picHeight,
             a.picScale,
             a.picFormat,
+            a.thumbCount,
             a.userId,
             a.createTime,
             a.editTime,

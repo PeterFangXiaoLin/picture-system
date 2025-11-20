@@ -28,6 +28,12 @@ public class PictureAdminVO implements Serializable {
     private String url;
 
     /**
+     * 压缩图 url
+     */
+    @ApiModelProperty(value = "压缩图 url")
+    private String compressedUrl;
+
+    /**
      * 图片名称
      */
     @ApiModelProperty(value = "图片名称")
@@ -92,6 +98,12 @@ public class PictureAdminVO implements Serializable {
      */
     @ApiModelProperty(value = "图片格式")
     private String picFormat;
+
+    /**
+     * 点赞数量
+     */
+    @ApiModelProperty(value = "点赞数量")
+    private Integer thumbCount;
 
     /**
      * 用户 id

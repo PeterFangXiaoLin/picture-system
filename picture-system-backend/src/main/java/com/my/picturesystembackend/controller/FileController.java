@@ -1,7 +1,7 @@
 package com.my.picturesystembackend.controller;
 
 import com.my.picturesystembackend.annotation.AuthCheck;
-import com.my.picturesystembackend.cofig.CosClientConfig;
+import com.my.picturesystembackend.config.CosClientConfig;
 import com.my.picturesystembackend.common.BaseResponse;
 import com.my.picturesystembackend.common.ResultUtils;
 import com.my.picturesystembackend.constant.UserConstant;

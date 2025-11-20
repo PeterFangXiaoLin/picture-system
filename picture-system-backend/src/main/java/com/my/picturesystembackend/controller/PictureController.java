@@ -103,12 +103,13 @@ public class PictureController {
      * 根据id获取图片VO
      *
      * @param id id
+     * @param request request
      * @return 图片VO
      */
     @GetMapping("/get/vo")
     @ApiOperation(value = "根据id获取图片", notes = "获取图片")
-    public BaseResponse<PictureVO> getPictureVOById(Long id) {
-        return ResultUtils.success(pictureService.getPictureVOById(id));
+    public BaseResponse<PictureVO> getPictureVOById(Long id, HttpServletRequest request) {
+        return ResultUtils.success(pictureService.getPictureVOById(id, request));
     }
 
     /**
@@ -128,12 +129,13 @@ public class PictureController {
      * 分页获取图片列表
      *
      * @param pictureQueryRequest 分页获取图片列表请求
+     * @param request request
      * @return 图片列表
      */
     @PostMapping("/list/page/vo")
     @ApiOperation(value = "分页获取图片列表", notes = "分页获取图片列表")
-    public BaseResponse<Page<PictureVO>> listPictureVOByPage(@RequestBody PictureQueryRequest pictureQueryRequest) {
-        return ResultUtils.success(pictureService.listPictureVOByPage(pictureQueryRequest));
+    public BaseResponse<Page<PictureVO>> listPictureVOByPage(@RequestBody PictureQueryRequest pictureQueryRequest, HttpServletRequest request) {
+        return ResultUtils.success(pictureService.listPictureVOByPage(pictureQueryRequest, request));
     }
 
     /**

@@ -23,30 +23,25 @@ import com.my.picturesystembackend.manager.upload.UrlPictureUpload;
 import com.my.picturesystembackend.mapper.PictureMapper;
 import com.my.picturesystembackend.model.dto.file.UploadPictureResult;
 import com.my.picturesystembackend.model.dto.picture.*;
-import com.my.picturesystembackend.model.entity.Category;
-import com.my.picturesystembackend.model.entity.Picture;
-import com.my.picturesystembackend.model.entity.Tag;
-import com.my.picturesystembackend.model.entity.User;
+import com.my.picturesystembackend.model.entity.*;
 import com.my.picturesystembackend.model.enums.PictureReviewStatusEnum;
 import com.my.picturesystembackend.model.vo.PictureAdminVO;
 import com.my.picturesystembackend.model.vo.PictureVO;
-import com.my.picturesystembackend.service.CategoryService;
-import com.my.picturesystembackend.service.PictureService;
-import com.my.picturesystembackend.service.TagService;
-import com.my.picturesystembackend.service.UserService;
+import com.my.picturesystembackend.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -81,6 +76,12 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
     private final StringRedisTemplate stringRedisTemplate;
 
+    private final AsyncService asyncService;
+
+    @Lazy
+    @Resource
+    private ThumbService thumbService;
+
     @Override
     public void validPicture(Picture picture) {
         if (picture == null) {
@@ -112,10 +113,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             pictureId = pictureUploadRequest.getId();
         }
         // 如果是更新，则判断图片是否存在
+        Picture oldPicture = null;
         if (pictureId != null) {
             // 开放用户上传功能
             // 校验仅本人或管理员可编辑
-            Picture oldPicture = this.getById(pictureId);
+            oldPicture = this.getById(pictureId);
             ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR, "图片不存在");
             if (!userService.isAdmin(loginUser) && !loginUser.getId().equals(oldPicture.getUserId())) {
                 throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
@@ -133,6 +135,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         // 把图片信息保存到数据库
         Picture picture = new Picture();
         picture.setUrl(uploadPictureResult.getUrl());
+        picture.setCompressedUrl(uploadPictureResult.getCompressedUrl());
         picture.setName(uploadPictureResult.getPicName());
         picture.setPicSize(uploadPictureResult.getPicSize());
         picture.setPicWidth(uploadPictureResult.getPicWidth());
@@ -156,7 +159,13 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         if (!result) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "图片上传失败，数据库插入失败");
         }
-        return this.getPictureVO(picture);
+
+        // 异步删除文件
+        if (oldPicture != null) {
+            asyncService.clearPictureFile(oldPicture);
+        }
+
+        return this.getPictureVO(picture, loginUser);
     }
 
     @Override
@@ -178,6 +187,10 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         if (!result) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "删除图片失败");
         }
+
+        // 异步删除对象存储文件
+        asyncService.clearPictureFile(oldPicture);
+
         return true;
     }
 
@@ -211,7 +224,10 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         }
 
         // 第二次删除缓存
-        this.asyncDeleteCache(id);
+        asyncService.asyncDeleteCache(id);
+
+        // 删除对象存储文件
+        asyncService.clearPictureFile(oldPicture);
         return true;
     }
 
@@ -223,7 +239,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         if (StrUtil.isNotBlank(tags)) {
             List<String> split = StrUtil.split(tags, StrUtil.COMMA);
             if (CollUtil.isNotEmpty(split)) {
-                List<Long> idList = split.stream().map(Long::parseLong).collect(Collectors.toList());
+                List<Long> idList = split.stream()
+                        .map(Long::parseLong)
+                        .collect(Collectors.toList());
                 List<Tag> tagList = tagService.listByIds(idList);
                 pictureAdminVO.setTagVOList(tagService.getTagVOList(tagList));
             }
@@ -232,15 +250,16 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     }
 
     @Override
-    public PictureVO getPictureVOById(Long id) {
+    public PictureVO getPictureVOById(Long id, HttpServletRequest request) {
         ThrowUtils.throwIf(id == null || id <= 0L, ErrorCode.PARAMS_ERROR);
         Picture picture = this.getById(id);
+        User loginUser = userService.getLoginUserPermitNull(request);
         ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR);
-        return this.getPictureVO(picture);
+        return this.getPictureVO(picture, loginUser);
     }
 
     @Override
-    public PictureVO getPictureVO(Picture picture) {
+    public PictureVO getPictureVO(Picture picture, User loginUser) {
         if (picture == null) {
             return null;
         }
@@ -267,6 +286,16 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
                 pictureVO.setTagVOList(tagService.getTagVOList(tagList));
             }
         }
+
+        // 是否已点赞判断
+        if (loginUser != null) {
+            Thumb thumb = thumbService.lambdaQuery()
+                    .eq(Thumb::getUserId, loginUser.getId())
+                    .eq(Thumb::getPictureId, picture.getId())
+                    .one();
+            pictureVO.setHasThumb(thumb != null);
+        }
+
         return pictureVO;
     }
 
@@ -382,7 +411,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     }
 
     @Override
-    public Page<PictureVO> listPictureVOByPage(PictureQueryRequest pictureQueryRequest) {
+    public Page<PictureVO> listPictureVOByPage(PictureQueryRequest pictureQueryRequest, HttpServletRequest request) {
         long current = pictureQueryRequest.getCurrent();
         long size = pictureQueryRequest.getPageSize();
 
@@ -432,7 +461,26 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             
             record.setTagVOList(tagService.getTagVOList(recordTags));
         }
-        
+
+        // 填充点赞信息
+        User loginUser = userService.getLoginUserPermitNull(request);
+        Map<Long, Boolean> pictureIdHasThumbMap = new HashMap<>();
+        if (loginUser != null) {
+            Set<Long> pictureIdSet = records.stream()
+                    .map(PictureVO::getId)
+                    .collect(Collectors.toSet());
+            // 获取点赞记录
+            List<Thumb> thumbList = thumbService.lambdaQuery()
+                    .eq(Thumb::getUserId, loginUser.getId())
+                    .in(Thumb::getPictureId, pictureIdSet)
+                    .list();
+
+            thumbList.forEach(pictureThumb -> pictureIdHasThumbMap.put(pictureThumb.getPictureId(), true));
+        }
+
+        // 为每条记录设置是否已点赞
+        records.forEach(pictureVO -> pictureVO.setHasThumb(pictureIdHasThumbMap.getOrDefault(pictureVO.getId(), false)));
+
         return pictureVOPage;
     }
 
@@ -543,7 +591,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         }
 
         // 第二次删除缓存
-        this.asyncDeleteCache(id);
+        asyncService.asyncDeleteCache(id);
         return true;
     }
 
@@ -658,6 +706,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
                 // 把图片信息保存到数据库
                 Picture picture = new Picture();
                 picture.setUrl(uploadPictureResult.getUrl());
+                picture.setCompressedUrl(uploadPictureResult.getCompressedUrl());
                 picture.setName(uploadPictureResult.getPicName());
                 if (StrUtil.isNotBlank(namePrefix)) {
                     picture.setName(namePrefix + (uploadCount + 1));
@@ -710,20 +759,6 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         if (CollUtil.isNotEmpty(keys)) {
             stringRedisTemplate.delete(keys);
             log.debug("Cleared cache for picture ID: {}", pictureId);
-        }
-    }
-
-    @Override
-    @Async
-    public void asyncDeleteCache(Long pictureId) {
-        try {
-            // 延迟一段时间再次删除缓存，通常建议50-100ms
-            Thread.sleep(100);
-            clearPictureCache(pictureId);
-            log.debug("Executed delayed cache deletion for picture ID: {}", pictureId);
-        } catch (InterruptedException e) {
-            log.error("Delayed cache deletion interrupted for picture ID: {}", pictureId, e);
-            Thread.currentThread().interrupt();
         }
     }
 }

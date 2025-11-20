@@ -1,4 +1,4 @@
-package com.my.picturesystembackend.cofig;
+package com.my.picturesystembackend.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;

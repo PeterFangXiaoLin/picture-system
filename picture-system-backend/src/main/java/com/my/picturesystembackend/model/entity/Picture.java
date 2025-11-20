@@ -29,6 +29,12 @@ public class Picture implements Serializable {
     private String url;
 
     /**
+     * 压缩图片 url
+     */
+    @TableField(value = "compressedUrl")
+    private String compressedUrl;
+
+    /**
      * 图片名称
      */
     @TableField(value = "name")
@@ -81,6 +87,12 @@ public class Picture implements Serializable {
      */
     @TableField(value = "picFormat")
     private String picFormat;
+
+    /**
+     * 点赞数量
+     */
+    @TableField(value = "thumbCount")
+    private Integer thumbCount;
 
     /**
      * 创建用户 id

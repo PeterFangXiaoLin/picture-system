@@ -1,6 +1,9 @@
 package com.my.picturesystembackend.manager;
 
-import com.my.picturesystembackend.cofig.CosClientConfig;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
+import com.my.picturesystembackend.config.CosClientConfig;
+import com.my.picturesystembackend.model.enums.PictureFileSuffixEnum;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.model.*;
 import com.qcloud.cos.model.ciModel.persistence.PicOperations;
@@ -9,6 +12,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 对象存储常用方法
@@ -66,6 +71,7 @@ public class CosManager {
     /**
      * 上传对象（附带图片信息）
      * https://cloud.tencent.com/document/product/436/55377
+     * https://cloud.tencent.com/document/product/436/55377
      *
      * @param key 唯一键
      * @param file 文件
@@ -74,8 +80,33 @@ public class CosManager {
     public PutObjectResult putPictureObject(String key, File file) {
         PutObjectRequest putObjectRequest = new PutObjectRequest(cosClientConfig.getBucket(), key, file);
         PicOperations picOperations = new PicOperations();
+        // 1 表示返回原图信息
         picOperations.setIsPicInfo(1);
+        // 添加图片处理规则
+        List<PicOperations.Rule> ruleList = new ArrayList<>();
+
+        // 非webp图片才进行压缩
+        String suffix = FileUtil.getSuffix(key);
+        if (StrUtil.isNotBlank(suffix) && !PictureFileSuffixEnum.WEBP.equals(PictureFileSuffixEnum.getEnumByValue(suffix.toLowerCase()))) {
+            // 图片压缩 （转成webp格式）
+            PicOperations.Rule compressRule = new PicOperations.Rule();
+            compressRule.setBucket(cosClientConfig.getBucket());
+            compressRule.setFileId(FileUtil.mainName(key) + ".webp");
+            compressRule.setRule("imageMogr2/format/webp");
+            ruleList.add(compressRule);
+        }
+
+        picOperations.setRules(ruleList);
         putObjectRequest.setPicOperations(picOperations);
         return cosClient.putObject(putObjectRequest);
+    }
+
+    /**
+     * 删除对象
+     *
+     * @param key 唯一键
+     */
+    public void deleteObject(String key) {
+        cosClient.deleteObject(cosClientConfig.getBucket(), key);
     }
 }

@@ -64,18 +64,21 @@ public interface PictureService extends IService<Picture> {
 
     /**
      * 根据id获取图片VO
+     *
      * @param id id
+     * @param request request
      * @return 图片VO
      */
-    PictureVO getPictureVOById(Long id);
+    PictureVO getPictureVOById(Long id, HttpServletRequest request);
 
     /**
-     * picture TO VO
+     * 获取封装的pictureVO
      *
      * @param picture picture
-     * @return PictureVO
+     * @param loginUser loginUser
+     * @return pictureVO
      */
-    PictureVO getPictureVO(Picture picture);
+    PictureVO getPictureVO(Picture picture, User loginUser);
 
     /**
      * pictureQueryRequest TO QueryWrapper
@@ -96,9 +99,10 @@ public interface PictureService extends IService<Picture> {
      * 分页获取 pictureVO
      *
      * @param pictureQueryRequest pictureQueryRequest
+     * @param request request
      * @return pictureVO list
      */
-    Page<PictureVO> listPictureVOByPage(PictureQueryRequest pictureQueryRequest);
+    Page<PictureVO> listPictureVOByPage(PictureQueryRequest pictureQueryRequest, HttpServletRequest request);
 
     /**
      * 分页获取 pictureVO 缓存版
@@ -149,11 +153,4 @@ public interface PictureService extends IService<Picture> {
      * @param pictureId 图片id
      */
     void clearPictureCache(Long pictureId);
-
-    /**
-     * 异步清除图片缓存
-     *
-     * @param pictureId 图片id
-     */
-    void asyncDeleteCache(Long pictureId);
 }

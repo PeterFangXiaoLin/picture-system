@@ -17,6 +17,12 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseInt_ = {
+    code?: number
+    data?: number
+    message?: string
+  }
+
   type BaseResponseListCategoryVO_ = {
     code?: number
     data?: CategoryVO[]
@@ -296,6 +302,8 @@ declare namespace API {
     category?: CategoryVO
     /** 分类 id */
     categoryId?: string
+    /** 压缩图 url */
+    compressedUrl?: string
     /** 创建时间 */
     createTime?: string
     /** 编辑时间 */
@@ -318,6 +326,14 @@ declare namespace API {
     picSize?: number
     /** 图片宽度 */
     picWidth?: number
+    /** 审核信息 */
+    reviewMessage?: string
+    /** 状态：0-待审核; 1-通过; 2-拒绝 */
+    reviewStatus?: number
+    /** 审核时间 */
+    reviewTime?: string
+    /** 审核人 id */
+    reviewerId?: string
     /** 标签VO */
     tagVOList?: TagVO[]
     /** 标签ids */
@@ -341,7 +357,7 @@ declare namespace API {
     /** 图片名称 */
     name?: string
     /** 标签 */
-    tags?: string[]
+    tags?: number[]
   }
 
   type PictureQueryRequest = {
@@ -367,6 +383,12 @@ declare namespace API {
     picSize?: number
     /** 图片宽度 */
     picWidth?: number
+    /** 审核信息 */
+    reviewMessage?: string
+    /** 状态：0-待审核; 1-通过; 2-拒绝 */
+    reviewStatus?: number
+    /** 审核人 id */
+    reviewerId?: string
     /** 搜索词（同时搜名称、简介等） */
     searchText?: string
     /** 排序字段 */
@@ -374,15 +396,48 @@ declare namespace API {
     /** 排序顺序（默认降序） */
     sortOrder?: string
     /** 标签 */
-    tags?: string[]
+    tags?: number[]
     /** 用户 id */
     userId?: string
+  }
+
+  type PictureReviewRequest = {
+    /** id */
+    id?: string
+    /** 审核信息 */
+    reviewMessage?: string
+    /** 状态：0-待审核, 1-通过, 2-拒绝 */
+    reviewStatus?: number
+  }
+
+  type PictureUploadByBatchRequest = {
+    /** 分类id */
+    categoryId?: string
+    /** 抓取数量 */
+    count?: number
+    /** 起始偏移量 */
+    first?: number
+    /** 名称前缀 */
+    namePrefix?: string
+    /** 搜索词 */
+    searchText?: string
+    /** 标签 */
+    tags?: number[]
+  }
+
+  type PictureUploadRequest = {
+    /** 文件地址 */
+    fileUrl?: string
+    /** 图片 id（用于修改） */
+    id?: string
   }
 
   type PictureVO = {
     category?: CategoryVO
     /** 分类 id */
     categoryId?: string
+    /** 压缩图 url */
+    compressedUrl?: string
     /** 创建时间 */
     createTime?: string
     /** 编辑时间 */
@@ -489,6 +544,8 @@ declare namespace API {
   }
 
   type uploadPictureUsingPOSTParams = {
+    /** 文件地址 */
+    fileUrl?: string
     /** 图片 id（用于修改） */
     id?: string
   }

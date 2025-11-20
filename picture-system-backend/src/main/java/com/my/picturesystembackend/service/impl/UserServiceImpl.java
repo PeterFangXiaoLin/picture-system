@@ -119,6 +119,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return true;
     }
 
+    /**
+     * 获取当前登录用户（不抛出异常）
+     *
+     * @param request HttpServletRequest
+     * @return 当前登录用户，未登录则返回null
+     */
+    @Override
+    public User getLoginUserPermitNull(HttpServletRequest request) {
+        return (User) request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
+    }
+
     @Override
     public Long addUser(UserAddRequest userAddRequest) {
         ThrowUtils.throwIf(userAddRequest == null, ErrorCode.PARAMS_ERROR);

@@ -6,11 +6,7 @@
         <a-row :gutter="16">
           <a-col :span="6">
             <a-form-item label="图片名称">
-              <a-input
-                v-model:value="searchParams.name"
-                placeholder="请输入图片名称"
-                allowClear
-              />
+              <a-input v-model:value="searchParams.name" placeholder="请输入图片名称" allowClear />
             </a-form-item>
           </a-col>
           <a-col :span="6">
@@ -30,7 +26,9 @@
                 placeholder="请选择分类"
                 allowClear
                 show-search
-                :filter-option="(input, option) => option.label.toLowerCase().includes(input.toLowerCase())"
+                :filter-option="
+                  (input, option) => option.label.toLowerCase().includes(input.toLowerCase())
+                "
               />
             </a-form-item>
           </a-col>
@@ -43,13 +41,25 @@
                 placeholder="请选择标签"
                 allowClear
                 show-search
-                :filter-option="(input, option) => option.label.toLowerCase().includes(input.toLowerCase())"
+                :filter-option="
+                  (input, option) => option.label.toLowerCase().includes(input.toLowerCase())
+                "
               />
             </a-form-item>
           </a-col>
         </a-row>
 
         <a-row :gutter="16" justify="space-between">
+          <a-col :span="6">
+            <a-form-item label="审核状态">
+              <a-select
+                v-model:value="searchParams.reviewStatus"
+                placeholder="请输入审核状态"
+                allowClear
+                :options="PIC_REVIEW_STATUS_OPTIONS"
+              />
+            </a-form-item>
+          </a-col>
           <a-col :span="6">
             <a-form-item label="排序字段">
               <a-select v-model:value="searchParams.sortField" placeholder="排序字段" allowClear>
@@ -67,7 +77,7 @@
               </a-select>
             </a-form-item>
           </a-col>
-          <a-col :span="12" class="button-col">
+          <a-col :span="6" class="button-col">
             <a-form-item>
               <a-space size="middle">
                 <a-button type="primary" html-type="submit" :loading="loading">搜索</a-button>
@@ -131,6 +141,13 @@
               <span>{{ record.user?.userName || '-' }}</span>
             </div>
           </template>
+          <template v-if="column.key === 'reviewMessage'">
+            <!-- 审核信息 -->
+            <div>审核状态：{{ PIC_REVIEW_STATUS_MAP[record.reviewStatus] }}</div>
+            <div>审核信息：{{ record.reviewMessage }}</div>
+            <div>审核人：{{ record.reviewerId }}</div>
+          </template>
+
           <template v-if="column.key === 'createTime'">
             {{ record.createTime ? dayjs(record.createTime).format('YYYY-MM-DD HH:mm:ss') : '-' }}
           </template>
@@ -139,7 +156,30 @@
           </template>
           <template v-if="column.key === 'action'">
             <a-space>
-              <a-button type="link" size="small" :href="`/add_picture?id=${record.id}`" class="action-btn">
+              <a-button
+                v-if="record.reviewStatus !== PIC_REVIEW_STATUS_ENUM.PASS"
+                type="link"
+                size="small"
+                @click="handleReview(record, PIC_REVIEW_STATUS_ENUM.PASS)"
+                class="action-btn"
+              >
+                <span>通过</span>
+              </a-button>
+              <a-button
+                v-if="record.reviewStatus !== PIC_REVIEW_STATUS_ENUM.REJECT"
+                type="link"
+                size="small"
+                @click="handleReview(record, PIC_REVIEW_STATUS_ENUM.REJECT)"
+                class="action-btn"
+              >
+                <span>拒绝</span>
+              </a-button>
+              <a-button
+                type="link"
+                size="small"
+                :href="`/add_picture?id=${record.id}`"
+                class="action-btn"
+              >
                 <EditOutlined />
                 <span>编辑</span>
               </a-button>
@@ -159,7 +199,6 @@
         </template>
       </a-table>
     </div>
-
   </div>
 </template>
 
@@ -169,12 +208,17 @@ import { message } from 'ant-design-vue'
 import { EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons-vue'
 import {
   listPictureAdminVoByPageUsingPost,
-  editPictureUsingPost,
   deletePictureUsingPost,
+  doPictureReviewUsingPost,
 } from '@/api/pictureController'
 import { listCategoryVoUsingPost } from '@/api/categoryController'
 import { listTagVoUsingPost } from '@/api/tagController'
 import dayjs from 'dayjs'
+import {
+  PIC_REVIEW_STATUS_ENUM,
+  PIC_REVIEW_STATUS_MAP,
+  PIC_REVIEW_STATUS_OPTIONS,
+} from '../../constants/picture.ts'
 
 // 数据相关
 const dataList = ref<API.PictureAdminVO[]>([])
@@ -190,24 +234,6 @@ const searchParams = reactive<API.PictureQueryRequest>({
   current: 1,
   pageSize: 10,
 })
-
-// 模态框相关
-const modalVisible = ref(false)
-const submitLoading = ref(false)
-const formRef = ref()
-
-// 表单数据
-const formData = reactive<API.PictureEditRequest>({
-  id: '',
-  name: '',
-  introduction: '',
-  url: '',
-})
-
-// 表单验证规则
-const formRules = {
-  name: [{ required: true, message: '请输入图片名称', trigger: 'blur' }],
-}
 
 // 表格列配置
 const columns = [
@@ -251,6 +277,12 @@ const columns = [
     width: 150,
   },
   {
+    title: '审核信息',
+    key: 'reviewMessage',
+    width: 180,
+    align: 'center',
+  },
+  {
     title: '创建时间',
     key: 'createTime',
     width: 180,
@@ -263,7 +295,7 @@ const columns = [
   {
     title: '操作',
     key: 'action',
-    width: 180,
+    width: 200,
     fixed: 'right',
   },
 ]
@@ -310,6 +342,7 @@ const doReset = () => {
     introduction: undefined,
     categoryId: undefined,
     tags: undefined,
+    reviewStatus: undefined,
     sortField: undefined,
     sortOrder: undefined,
   })
@@ -353,6 +386,24 @@ const loadCategoryAndTag = async () => {
     tagOptions.value = tagRes.data.data?.map((t: any) => ({ value: t.id, label: t.name })) || []
   } catch (error) {
     message.error('加载分类和标签失败')
+  }
+}
+
+// 图片审核处理
+const handleReview = async (record: API.PictureAdminVO, reviewStatus: number) => {
+  const reviewMessage =
+    reviewStatus === PIC_REVIEW_STATUS_ENUM.PASS ? '管理员操作通过' : '管理员操作拒绝'
+  const res = await doPictureReviewUsingPost({
+    id: record.id,
+    reviewStatus,
+    reviewMessage,
+  })
+  if (res.data.code === 0) {
+    message.success('审核操作成功')
+    // 重新获取列表
+    fetchData()
+  } else {
+    message.error('审核操作失败，' + res.data.message)
   }
 }
 

@@ -5,7 +5,15 @@
     </h2>
 
     <div class="upload-section">
-      <PictureUpload :picture="picture" :onSuccess="onSuccess" />
+      <!-- 选择上传方式 -->
+      <a-tabs v-model:activeKey="uploadType">
+        <a-tab-pane key="file" tab="文件上传">
+          <PictureUpload :picture="picture" :onSuccess="onSuccess" />
+        </a-tab-pane>
+        <a-tab-pane key="url" tab="URL 上传" force-render>
+          <UrlPictureUpload :picture="picture" :onSuccess="onSuccess" />
+        </a-tab-pane>
+      </a-tabs>
     </div>
 
     <a-form
@@ -87,6 +95,7 @@ import PictureUpload from '@/components/PictureUpload.vue'
 import { editPictureUsingPost, getPictureVoByIdUsingGet } from '@/api/pictureController'
 import { listCategoryVoUsingPost } from '@/api/categoryController'
 import { listTagVoUsingPost } from '@/api/tagController'
+import UrlPictureUpload from '@/components/UrlPictureUpload.vue'
 
 const router = useRouter()
 
@@ -96,6 +105,8 @@ const submitting = ref(false)
 
 const categoryOptions = ref<{ value: string | number; label: string }[]>([])
 const tagOptions = ref<{ value: string; label: string }[]>([])
+
+const uploadType = ref<'file' | 'url'>('file')
 
 // 上传成功后回调
 const onSuccess = (newPicture: API.PictureVO) => {
