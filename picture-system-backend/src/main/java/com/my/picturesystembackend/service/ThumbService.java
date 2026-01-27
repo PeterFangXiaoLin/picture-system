@@ -39,4 +39,6 @@ public interface ThumbService extends IService<Thumb> {
      * @return 是否点赞
      */
     boolean hasThumb(Long pictureId, Long userId);
+
+
 }

@@ -112,6 +112,12 @@ public class PictureAdminVO implements Serializable {
     private Long userId;
 
     /**
+     * 空间 id
+     */
+    @ApiModelProperty(value = "space id")
+    private Long spaceId;
+
+    /**
      * 状态：0-待审核; 1-通过; 2-拒绝
      */
     @ApiModelProperty(value = "状态：0-待审核; 1-通过; 2-拒绝")

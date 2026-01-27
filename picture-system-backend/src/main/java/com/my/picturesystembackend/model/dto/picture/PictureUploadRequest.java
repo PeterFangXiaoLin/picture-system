@@ -25,5 +25,11 @@ public class PictureUploadRequest implements Serializable {
     @ApiModelProperty(value = "文件地址")
     private String fileUrl;
 
+    /**
+     * 空间id
+     */
+    @ApiModelProperty(value = "空间id")
+    private Long spaceId;
+
     private static final long serialVersionUID = 1L;  
 }

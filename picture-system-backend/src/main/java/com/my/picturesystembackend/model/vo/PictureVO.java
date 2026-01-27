@@ -109,7 +109,13 @@ public class PictureVO implements Serializable {
      * 用户 id  
      */
     @ApiModelProperty(value = "用户 id")
-    private Long userId;  
+    private Long userId;
+
+    /**
+     * 空间 id
+     */
+    @ApiModelProperty(value = "space id")
+    private Long spaceId;
   
     /**  
      * 创建时间  

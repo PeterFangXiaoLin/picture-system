@@ -19,6 +19,7 @@
             <result property="picFormat" column="picFormat" jdbcType="VARCHAR"/>
             <result property="thumbCount" column="thumbCount" jdbcType="INTEGER"/>
             <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="spaceId" column="spaceId" jdbcType="BIGINT"/>
             <result property="reviewStatus" column="reviewStatus" jdbcType="INTEGER"/>
             <result property="reviewMessage" column="reviewMessage" jdbcType="VARCHAR"/>
             <result property="reviewerId" column="reviewerId" jdbcType="BIGINT"/>
@@ -31,7 +32,7 @@
 
     <sql id="Base_Column_List">
         id,url,compressedUrl,name,introduction,categoryId,tags,picSize,
-        picWidth,picHeight,picScale,picFormat,thumbCount,userId,
+        picWidth,picHeight,picScale,picFormat,thumbCount,userId,spaceId,
         reviewStatus,reviewMessage,reviewerId,reviewTime,
         createTime,editTime,updateTime,isDelete
     </sql>
@@ -52,6 +53,7 @@
         <result property="picFormat" column="picFormat"/>
         <result property="thumbCount" column="thumbCount"/>
         <result property="userId" column="userId"/>
+        <result property="spaceId" column="spaceId"/>
         <result property="createTime" column="createTime"/>
         <result property="editTime" column="editTime"/>
         <result property="updateTime" column="updateTime"/>
@@ -93,6 +95,7 @@
         <result property="picFormat" column="picFormat"/>
         <result property="thumbCount" column="thumbCount"/>
         <result property="userId" column="userId"/>
+        <result property="spaceId" column="spaceId"/>
         <result property="reviewStatus" column="reviewStatus"/>
         <result property="reviewMessage" column="reviewMessage"/>
         <result property="reviewerId" column="reviewerId"/>
@@ -138,6 +141,7 @@
             a.picFormat,
             a.thumbCount,
             a.userId,
+            a.spaceId,
             a.reviewStatus,
             a.reviewMessage,
             a.reviewerId,
@@ -186,6 +190,7 @@
             a.picFormat,
             a.thumbCount,
             a.userId,
+        a.spaceId,
             a.reviewStatus,
             a.reviewMessage,
             a.reviewerId,
@@ -291,6 +296,7 @@
             a.picFormat,
             a.thumbCount,
             a.userId,
+        a.spaceId,
             a.createTime,
             a.editTime,
             a.updateTime,
@@ -359,6 +365,12 @@
             </if>
             <if test="req.reviewerId != null">
                 AND a.reviewerId = #{req.reviewerId}
+            </if>
+            <if test="req.spaceId != null">
+                AND a.spaceId = #{req.spaceId}
+            </if>
+            <if test="req.nullSpaceId != null and req.nullSpaceId == true">
+                AND a.spaceId IS NULL
             </if>
             <if test="req.searchText != null and req.searchText != ''">
                 AND (a.name LIKE CONCAT('%', #{req.searchText}, '%')

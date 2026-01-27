@@ -124,6 +124,9 @@ public class Picture implements Serializable {
     @TableField(value = "reviewTime")
     private LocalDateTime reviewTime;
 
+    @TableField(value = "spaceId")
+    private Long spaceId;
+
     /**
      * 创建时间
      */

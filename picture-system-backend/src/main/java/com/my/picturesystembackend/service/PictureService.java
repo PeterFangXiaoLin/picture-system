@@ -11,6 +11,7 @@ import com.my.picturesystembackend.model.vo.PictureAdminVO;
 import com.my.picturesystembackend.model.vo.PictureVO;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
 
 /**
 * @author helloworld
@@ -153,4 +154,28 @@ public interface PictureService extends IService<Picture> {
      * @param pictureId 图片id
      */
     void clearPictureCache(Long pictureId);
+
+    /**
+     * 检查图片操作权限
+     *
+     * @param loginUser 登录用户
+     * @param picture   图片
+     */
+    void checkPictureAuth(User loginUser, Picture picture);
+
+    /**
+     * 判断是否是热门数据
+     *
+     * @param localDateTime 时间
+     * @return 是否是热门数据
+     */
+    boolean isHotData(LocalDateTime localDateTime);
+
+    /**
+     * 获取图片创建时间
+     *
+     * @param pictureId 图片id
+     * @return 图片创建时间
+     */
+    LocalDateTime getPictureCreateTime(Long pictureId);
 }
