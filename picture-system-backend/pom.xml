@@ -86,6 +86,17 @@
             <artifactId>spring-session-data-redis</artifactId>
         </dependency>
 
+        <!-- Java 8 Date/time -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
         <!-- https://redisson.pro/docs/integration-with-spring/-->
         <dependency>
             <groupId>org.redisson</groupId>
