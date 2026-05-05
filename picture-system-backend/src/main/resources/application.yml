@@ -22,8 +22,6 @@ spring:
     host: 127.0.0.1
     port: 6379
     timeout: 5000
-    redisson:
-      file: classpath:redisson.yaml
     # Lettuce连接池配置（Spring Boot 2.x 默认）
     lettuce:
       pool:

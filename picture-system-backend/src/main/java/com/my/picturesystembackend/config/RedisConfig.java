@@ -74,7 +74,8 @@ public class RedisConfig {
         // 配置ObjectMapper以支持Java 8日期时间类型
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-        objectMapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL);
+        objectMapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance,
+                ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
         // 支持Java 8日期时间类型（LocalDateTime, LocalDate等）
         objectMapper.registerModule(new JavaTimeModule());
 
