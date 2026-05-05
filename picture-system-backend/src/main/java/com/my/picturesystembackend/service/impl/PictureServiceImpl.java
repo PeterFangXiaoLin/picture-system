@@ -203,6 +203,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         // 开启事务
         Long finalSpaceId = spaceId;
         Picture finalOldPicture = oldPicture;
+        // 更新额度时，如果时再次上传替换图片，需要把旧图片删除，同时额度要减去该值
         transactionTemplate.execute(status -> {
             // 利用mybatis-plus的方法即可新增和更新
             boolean result = this.saveOrUpdate(picture);
@@ -211,6 +212,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             if (finalOldPicture != null) {
                 picSize -= finalOldPicture.getPicSize();
             }
+            // 更新空间使用额度
             if (finalSpaceId != null) {
                 boolean update = spaceService.lambdaUpdate()
                         .eq(Space::getId, finalSpaceId)
@@ -442,9 +444,25 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     }
 
     @Override
-    public Page<PictureAdminVO> listPictureAdminVOByPage(PictureQueryRequest pictureQueryRequest) {
+    public Page<PictureAdminVO> listPictureAdminVOByPage(PictureQueryRequest pictureQueryRequest, HttpServletRequest request) {
         long current = pictureQueryRequest.getCurrent();
         long size = pictureQueryRequest.getPageSize();
+
+        Long spaceId = pictureQueryRequest.getSpaceId();
+        if (spaceId == null) {
+            // 补充只查出审核通过的图片
+            pictureQueryRequest.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
+            pictureQueryRequest.setNullSpaceId(true);
+        } else {
+            // 私有空间
+            User loginUser = userService.getLoginUser(request);
+            Space space = spaceService.getById(spaceId);
+            ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
+            if (!space.getUserId().equals(loginUser.getId())) {
+                throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限使用该空间");
+            }
+        }
+
         Page<PictureAdminVO> page = new Page<>(current, size);
         Page<PictureAdminVO> pictureAdminVOPage = pictureMapper.listPictureAdminVOByPage(page, pictureQueryRequest);
         
@@ -578,12 +596,25 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     }
 
     @Override
-    public Page<PictureVO> listPictureVOByPageWithCache(PictureQueryRequest pictureQueryRequest) {
+    public Page<PictureVO> listPictureVOByPageWithCache(PictureQueryRequest pictureQueryRequest, HttpServletRequest request) {
         long current = pictureQueryRequest.getCurrent();
         long size = pictureQueryRequest.getPageSize();
 
-        // 补充只查出审核通过的图片
-        pictureQueryRequest.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
+        // 增加空间id查询支持
+        Long spaceId = pictureQueryRequest.getSpaceId();
+        if (spaceId == null) {
+            // 补充只查出审核通过的图片
+            pictureQueryRequest.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
+            pictureQueryRequest.setNullSpaceId(true);
+        } else {
+            // 私有空间
+            User loginUser = userService.getLoginUser(request);
+            Space space = spaceService.getById(spaceId);
+            ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
+            if (!space.getUserId().equals(loginUser.getId())) {
+                throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限使用该空间");
+            }
+        }
 
         // 构建缓存key
         String queryCondition = JSONUtil.toJsonStr(pictureQueryRequest);

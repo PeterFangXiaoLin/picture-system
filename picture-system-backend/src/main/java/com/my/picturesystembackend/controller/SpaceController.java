@@ -158,7 +158,7 @@ public class SpaceController {
     }
 
     /**
-     * 获取空间级别
+     * 获取空间级别，便于前端展示
      *
      * @return 空间级别列表
      */

@@ -92,9 +92,10 @@ public interface PictureService extends IService<Picture> {
      * 分页获取 pictureAdminVO
      *
      * @param pictureQueryRequest pictureQueryRequest
+     * @param request request
      * @return pictureAdminVO list
      */
-    Page<PictureAdminVO> listPictureAdminVOByPage(PictureQueryRequest pictureQueryRequest);
+    Page<PictureAdminVO> listPictureAdminVOByPage(PictureQueryRequest pictureQueryRequest, HttpServletRequest request);
 
     /**
      * 分页获取 pictureVO
@@ -109,9 +110,10 @@ public interface PictureService extends IService<Picture> {
      * 分页获取 pictureVO 缓存版
      *
      * @param pictureQueryRequest pictureQueryRequest
+     * @param request request
      * @return pictureVO list
      */
-    Page<PictureVO> listPictureVOByPageWithCache(PictureQueryRequest pictureQueryRequest);
+    Page<PictureVO> listPictureVOByPageWithCache(PictureQueryRequest pictureQueryRequest, HttpServletRequest request);
 
     /**
      * 编辑图片

@@ -10,16 +10,19 @@ import com.my.picturesystembackend.common.DeleteRequest;
 import com.my.picturesystembackend.exception.BusinessException;
 import com.my.picturesystembackend.exception.ErrorCode;
 import com.my.picturesystembackend.exception.ThrowUtils;
+import com.my.picturesystembackend.mapper.PictureMapper;
 import com.my.picturesystembackend.mapper.SpaceMapper;
 import com.my.picturesystembackend.model.dto.space.SpaceAddRequest;
 import com.my.picturesystembackend.model.dto.space.SpaceEditRequest;
 import com.my.picturesystembackend.model.dto.space.SpaceQueryRequest;
 import com.my.picturesystembackend.model.dto.space.SpaceUpdateRequest;
+import com.my.picturesystembackend.model.entity.Picture;
 import com.my.picturesystembackend.model.entity.Space;
 import com.my.picturesystembackend.model.entity.User;
 import com.my.picturesystembackend.model.enums.SpaceLevelEnum;
 import com.my.picturesystembackend.model.vo.SpaceVO;
 import com.my.picturesystembackend.model.vo.UserVO;
+import com.my.picturesystembackend.service.AsyncService;
 import com.my.picturesystembackend.service.SpaceService;
 import com.my.picturesystembackend.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +31,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,6 +50,10 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
     implements SpaceService{
 
     private final UserService userService;
+
+    private final PictureMapper pictureMapper;
+
+    private final AsyncService asyncService;
 
     private final TransactionTemplate transactionTemplate;
 
@@ -67,10 +75,11 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "空间级别不能为空");
             }
         }
-        // 修改和添加都要校验
+        // 添加和修改数据时，空间级别进行校验
         if (spaceLevel != null && spaceLevelEnum == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "空间级别不合法");
         }
+        // 添加和修改数据时，空间名称校验
         if (StrUtil.isNotBlank(spaceName) && spaceName.length() > 30) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "空间名称过长");
         }
@@ -88,13 +97,14 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
             }
             long maxCount = spaceLevelEnum.getMaxCount();
             if (space.getMaxCount() == null) {
-                space.setMaxSize(maxCount);
+                space.setMaxCount(maxCount);
             }
         }
     }
 
     @Override
     public Long addSpace(SpaceAddRequest spaceAddRequest, HttpServletRequest request) {
+        // 1. 填充参数默认值
         User loginUser = userService.getLoginUser(request);
         Space space = new Space();
         BeanUtil.copyProperties(spaceAddRequest, space);
@@ -107,19 +117,21 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         if (space.getSpaceLevel() == null) {
             space.setSpaceLevel(SpaceLevelEnum.COMMON.getValue());
         }
-        // 校验参数
-        this.validSpace(space, true);
         // 根据空间级别填充空间信息
         this.fillSpaceBySpaceLevel(space);
+        // 2. 校验参数
+        this.validSpace(space, true);
         // 填充创建用户 id
         Long userId = loginUser.getId();
         space.setUserId(userId);
-        // 校验权限
+        // 3. 校验权限
         if (SpaceLevelEnum.COMMON.getValue() != space.getSpaceLevel() &&
                 !userService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "仅管理员可创建专业版及以上空间");
         }
         // 添加空间
+        // 4. 控制同一用户只能创建一个私有空间
+        // 先提交事务 再释放锁
         Object lock = lockMap.computeIfAbsent(userId, k -> new Object());
         synchronized (lock) {
             try {
@@ -150,7 +162,9 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         // 更新空间
         Space space = new Space();
         BeanUtil.copyProperties(spaceUpdateRequest, space);
+        // 校验参数
         this.validSpace(space, false);
+        // 填充字段
         this.fillSpaceBySpaceLevel(space);
         boolean result = this.updateById(space);
         if (!result) {
@@ -202,6 +216,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
                 spaceVO.setUser(userVO);
             }
         });
+        spaceVOPage.setRecords(spaceVOList);
         return spaceVOPage;
     }
 
@@ -243,10 +258,25 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         if (!userService.isAdmin(loginUser) && !oldSpace.getUserId().equals(loginUser.getId())) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
-        // 删除空间
-        boolean result = this.removeById(id);
-        if (!result) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR);
+        // 删除空间，同时删除空间中的图片，以及异步清空对象存储中的图片
+        List<Picture> pictureList = new ArrayList<>();
+        transactionTemplate.execute(status -> {
+            QueryWrapper<Picture> pictureQueryWrapper = new QueryWrapper<>();
+            pictureQueryWrapper.eq("spaceId", id);
+            pictureList.addAll(pictureMapper.selectList(pictureQueryWrapper));
+            if (!CollectionUtils.isEmpty(pictureList)) {
+                List<Long> pictureIdList = pictureList.stream()
+                        .map(Picture::getId)
+                        .collect(Collectors.toList());
+                int deleteCount = pictureMapper.deleteBatchIds(pictureIdList);
+                ThrowUtils.throwIf(deleteCount != pictureIdList.size(), ErrorCode.OPERATION_ERROR, "删除空间图片失败");
+            }
+            boolean result = this.removeById(id);
+            ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+            return true;
+        });
+        if (!CollectionUtils.isEmpty(pictureList)) {
+            pictureList.forEach(asyncService::clearPictureFile);
         }
         return true;
     }
@@ -266,7 +296,9 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         // 编辑空间
         Space space = new Space();
         BeanUtil.copyProperties(spaceEditRequest, space);
+        // 校验参数
         this.validSpace(space, false);
+        // 填充参数
         this.fillSpaceBySpaceLevel(space);
         boolean result = this.updateById(space);
         if (!result) {

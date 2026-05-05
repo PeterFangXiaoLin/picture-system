@@ -190,7 +190,7 @@
             a.picFormat,
             a.thumbCount,
             a.userId,
-        a.spaceId,
+            a.spaceId,
             a.reviewStatus,
             a.reviewMessage,
             a.reviewerId,
@@ -256,6 +256,12 @@
             <if test="req.userId != null">
                 AND a.userId = #{req.userId}
             </if>
+            <if test="req.spaceId != null">
+                AND a.spaceId = #{req.spaceId}
+            </if>
+            <if test="req.nullSpaceId != null and req.nullSpaceId == true">
+                AND a.spaceId IS NULL
+            </if>
             <if test="req.reviewStatus != null">
                 AND a.reviewStatus = #{req.reviewStatus}
             </if>
@@ -296,7 +302,7 @@
             a.picFormat,
             a.thumbCount,
             a.userId,
-        a.spaceId,
+            a.spaceId,
             a.createTime,
             a.editTime,
             a.updateTime,

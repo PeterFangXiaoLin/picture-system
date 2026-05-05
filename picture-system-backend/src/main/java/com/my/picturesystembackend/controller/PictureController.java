@@ -116,13 +116,14 @@ public class PictureController {
      * 分页获取图片列表（仅管理员可用）
      *
      * @param pictureQueryRequest 分页获取图片列表请求
+     * @param request request
      * @return 图片列表
      */
     @PostMapping("/list/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     @ApiOperation(value = "分页获取图片列表（仅管理员可用）", notes = "分页获取图片列表")
-    public BaseResponse<Page<PictureAdminVO>> listPictureAdminVOByPage(@RequestBody PictureQueryRequest pictureQueryRequest) {
-        return ResultUtils.success(pictureService.listPictureAdminVOByPage(pictureQueryRequest));
+    public BaseResponse<Page<PictureAdminVO>> listPictureAdminVOByPage(@RequestBody PictureQueryRequest pictureQueryRequest, HttpServletRequest request) {
+        return ResultUtils.success(pictureService.listPictureAdminVOByPage(pictureQueryRequest, request));
     }
 
     /**
@@ -146,8 +147,8 @@ public class PictureController {
      */
     @PostMapping("/list/page/vo/cache")
     @ApiOperation(value = "分页获取图片列表（缓存）", notes = "分页获取图片列表")
-    public BaseResponse<Page<PictureVO>> listPictureVOByPageWithCache(@RequestBody PictureQueryRequest pictureQueryRequest) {
-        return ResultUtils.success(pictureService.listPictureVOByPageWithCache(pictureQueryRequest));
+    public BaseResponse<Page<PictureVO>> listPictureVOByPageWithCache(@RequestBody PictureQueryRequest pictureQueryRequest, HttpServletRequest request) {
+        return ResultUtils.success(pictureService.listPictureVOByPageWithCache(pictureQueryRequest, request));
     }
 
     /**
