@@ -29,6 +29,12 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseListSpaceLevel_ = {
+    code?: number
+    data?: SpaceLevel[]
+    message?: string
+  }
+
   type BaseResponseListTagVO_ = {
     code?: number
     data?: TagVO[]
@@ -71,6 +77,18 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponsePageSpace_ = {
+    code?: number
+    data?: PageSpace_
+    message?: string
+  }
+
+  type BaseResponsePageSpaceVO_ = {
+    code?: number
+    data?: PageSpaceVO_
+    message?: string
+  }
+
   type BaseResponsePageTag_ = {
     code?: number
     data?: PageTag_
@@ -98,6 +116,18 @@ declare namespace API {
   type BaseResponsePictureVO_ = {
     code?: number
     data?: PictureVO
+    message?: string
+  }
+
+  type BaseResponseSpace_ = {
+    code?: number
+    data?: Space
+    message?: string
+  }
+
+  type BaseResponseSpaceVO_ = {
+    code?: number
+    data?: SpaceVO
     message?: string
   }
 
@@ -193,6 +223,11 @@ declare namespace API {
     id?: string
   }
 
+  type DoThumbRequest = {
+    /** 图片id */
+    pictureId?: string
+  }
+
   type getCategoryByIdUsingGETParams = {
     /** id */
     id?: string
@@ -209,6 +244,16 @@ declare namespace API {
   }
 
   type getPictureVOByIdUsingGETParams = {
+    /** id */
+    id?: string
+  }
+
+  type getSpaceByIdUsingGETParams = {
+    /** id */
+    id?: string
+  }
+
+  type getSpaceVOByIdUsingGETParams = {
     /** id */
     id?: string
   }
@@ -274,6 +319,22 @@ declare namespace API {
     total?: number
   }
 
+  type PageSpace_ = {
+    current?: number
+    pages?: number
+    records?: Space[]
+    size?: number
+    total?: number
+  }
+
+  type PageSpaceVO_ = {
+    current?: number
+    pages?: number
+    records?: SpaceVO[]
+    size?: number
+    total?: number
+  }
+
   type PageTag_ = {
     current?: number
     pages?: number
@@ -334,10 +395,14 @@ declare namespace API {
     reviewTime?: string
     /** 审核人 id */
     reviewerId?: string
+    /** space id */
+    spaceId?: string
     /** 标签VO */
     tagVOList?: TagVO[]
     /** 标签ids */
     tags?: string
+    /** 点赞数量 */
+    thumbCount?: number
     /** 更新时间 */
     updateTime?: string
     /** 图片 url */
@@ -371,6 +436,8 @@ declare namespace API {
     introduction?: string
     /** 图片名称 */
     name?: string
+    /** 是否只查询 spaceId 为 null 的图片 */
+    nullSpaceId?: boolean
     /** 页面大小 */
     pageSize?: number
     /** 图片格式 */
@@ -395,6 +462,8 @@ declare namespace API {
     sortField?: string
     /** 排序顺序（默认降序） */
     sortOrder?: string
+    /** 空间 id */
+    spaceId?: string
     /** 标签 */
     tags?: number[]
     /** 用户 id */
@@ -430,6 +499,8 @@ declare namespace API {
     fileUrl?: string
     /** 图片 id（用于修改） */
     id?: string
+    /** 空间id */
+    spaceId?: string
   }
 
   type PictureVO = {
@@ -442,6 +513,8 @@ declare namespace API {
     createTime?: string
     /** 编辑时间 */
     editTime?: string
+    /** 是否已点赞 */
+    hasThumb?: boolean
     /** id */
     id?: string
     /** 简介 */
@@ -458,16 +531,118 @@ declare namespace API {
     picSize?: number
     /** 图片宽度 */
     picWidth?: number
+    /** space id */
+    spaceId?: string
     /** 标签 */
     tagVOList?: TagVO[]
     /** 标签ids */
     tags?: string
+    /** 点赞数量 */
+    thumbCount?: number
     /** 更新时间 */
     updateTime?: string
     /** 图片 url */
     url?: string
     user?: UserVO
     /** 用户 id */
+    userId?: string
+  }
+
+  type Space = {
+    createTime?: string
+    editTime?: string
+    id?: string
+    isDelete?: number
+    maxCount?: number
+    maxSize?: number
+    spaceLevel?: number
+    spaceName?: string
+    totalCount?: number
+    totalSize?: number
+    updateTime?: string
+    userId?: string
+  }
+
+  type SpaceAddRequest = {
+    /** 空间级别：0-普通版 1-专业版 2-旗舰版 */
+    spaceLevel?: number
+    /** 空间名称 */
+    spaceName?: string
+  }
+
+  type SpaceEditRequest = {
+    /** 空间 id */
+    id?: string
+    /** 空间名称 */
+    spaceName?: string
+  }
+
+  type SpaceLevel = {
+    /** 空间最大数量 */
+    maxCount?: number
+    /** 空间最大大小 */
+    maxSize?: number
+    /** 文本 */
+    text?: string
+    /** 值 */
+    value?: number
+  }
+
+  type SpaceQueryRequest = {
+    /** 当前页号 */
+    current?: number
+    /** id */
+    id?: string
+    /** 页面大小 */
+    pageSize?: number
+    /** 排序字段 */
+    sortField?: string
+    /** 排序顺序（默认降序） */
+    sortOrder?: string
+    /** 空间级别：0-普通版 1-专业版 2-旗舰版 */
+    spaceLevel?: number
+    /** 空间名称 */
+    spaceName?: string
+    /** 用户 id */
+    userId?: string
+  }
+
+  type SpaceUpdateRequest = {
+    /** id */
+    id?: string
+    /** 空间图片的最大数量 */
+    maxCount?: number
+    /** 空间图片的最大总大小 */
+    maxSize?: number
+    /** 空间级别：0-普通版 1-专业版 2-旗舰版 */
+    spaceLevel?: number
+    /** 空间名称 */
+    spaceName?: string
+  }
+
+  type SpaceVO = {
+    /** 创建时间 */
+    createTime?: string
+    /** 编辑时间 */
+    editTime?: string
+    /** id */
+    id?: string
+    /** 空间图片的最大数量 */
+    maxCount?: number
+    /** 空间图片的最大总大小 */
+    maxSize?: number
+    /** 空间级别：0-普通版 1-专业版 2-旗舰版 */
+    spaceLevel?: number
+    /** 空间名称 */
+    spaceName?: string
+    /** 当前空间下的图片数量 */
+    totalCount?: number
+    /** 当前空间下图片的总大小 */
+    totalSize?: number
+    /** 更新时间 */
+    updateTime?: string
+    user?: UserVO
+    /** 创建用户 id */
     userId?: string
   }
 
@@ -548,6 +723,8 @@ declare namespace API {
     fileUrl?: string
     /** 图片 id（用于修改） */
     id?: string
+    /** 空间id */
+    spaceId?: string
   }
 
   type User = {

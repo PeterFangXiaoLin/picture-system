@@ -35,6 +35,12 @@
                     <UserOutlined />
                     个人中心
                   </a-menu-item>
+                  <a-menu-item>
+                    <router-link to="/my_space">
+                      <UserOutlined />
+                      我的空间
+                    </router-link>
+                  </a-menu-item>
                   <a-menu-divider />
                   <a-menu-item key="logout">
                     <LogoutOutlined />

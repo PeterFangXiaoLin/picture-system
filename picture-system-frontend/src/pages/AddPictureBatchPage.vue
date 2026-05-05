@@ -10,7 +10,7 @@
         <a-input-number
           v-model:value="formData.count"
           placeholder="请输入数量"
-          style="min-width: 180px"
+          style="width: 100%"
           :min="1"
           :max="30"
           allow-clear
@@ -27,7 +27,7 @@
         <a-input-number
           v-model:value="formData.first"
           placeholder="请输入起始偏移量"
-          class="min-w-180px"
+          style="width: 100%"
           :min="1"
           allow-clear
         />

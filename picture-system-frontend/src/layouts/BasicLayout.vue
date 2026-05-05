@@ -2,12 +2,15 @@
   <div id="basic-layout">
     <a-layout style="min-height: 100vh">
       <!-- 只在非身份认证页面显示导航栏 -->
-      <a-layout-header v-if="!isAuthPage" class="header">
+      <a-layout-header v-if="!isAuthPage" class="header" >
         <GlobalHeader />
       </a-layout-header>
-      <a-layout-content :class="isAuthPage ? '' : 'content'">
-        <router-view />
-      </a-layout-content>
+      <a-layout>
+        <GlobalSider class="sider" />
+        <a-layout-content :class="isAuthPage ? '' : 'content'">
+          <router-view />
+        </a-layout-content>
+      </a-layout>
     </a-layout>
   </div>
 </template>
@@ -16,6 +19,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import GlobalHeader from '@/components/GlobalHeader.vue'
+import GlobalSider from '@/components/GlobalSider.vue'
 
 const route = useRoute()
 
@@ -33,12 +37,23 @@ const isAuthPage = computed(() => {
   padding-inline: 20px;
   background: white;
   color: unset;
-  margin-bottom: 16px;
+  margin-bottom: 1px;
 }
 
 #basic-layout .content {
   padding: 3rem 6rem;
   background: linear-gradient(to right, #fefefe, #fff);
   margin-bottom: 28px;
+}
+
+#basic-layout .sider {
+  background: #fff;
+  padding-top: 20px;
+  border-right: 0.5px solid #eee;
+}
+
+#basic-layout :deep(.ant-menu-root) {
+  border-bottom: none !important;
+  border-inline-end: none !important;
 }
 </style>

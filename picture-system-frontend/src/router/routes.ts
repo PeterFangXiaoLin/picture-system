@@ -72,6 +72,14 @@ const routes = [
     }
   },
   {
+    path: '/admin/spaceManage',
+    name: '空间管理',
+    component: () => import('@/pages/admin/SpaceManagePage.vue'),
+    meta: {
+      authCheck: ACCESS_ENUM.ADMIN,
+    }
+  },
+  {
     path: '/picture/:id',
     name: '图片详情',
     component: () => import('@/pages/PictureDetailPage.vue'),
@@ -86,6 +94,28 @@ const routes = [
     component: () => import('@/pages/AddPictureBatchPage.vue'),
     meta: {
       authCheck: ACCESS_ENUM.ADMIN,
+    }
+  },
+  {
+    path: '/add_space',
+    name: '创建空间',
+    component: () => import('@/pages/AddSpacePage.vue'),
+  },
+  {
+    path: '/my_space',
+    name: '我的空间',
+    component: () => import('@/pages/MySpacePage.vue'),
+    meta: {
+      show: false
+    }
+  },
+  {
+    path: '/space/:id',
+    name: '空间详情',
+    component: () => import('@/pages/SpaceDetailPage.vue'),
+    props: true,
+    meta: {
+      show: false
     }
   },
 ]
