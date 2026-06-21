@@ -118,6 +118,14 @@ const routes = [
       show: false
     }
   },
+  {
+    path: '/search_picture',
+    name: '图片搜索',
+    component: () => import('@/pages/SearchPicturePage.vue'),
+    meta: {
+      show: false
+    }
+  }
 ]
 
 export default routes

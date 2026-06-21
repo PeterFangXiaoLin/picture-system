@@ -29,6 +29,18 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseListImageSearchResult_ = {
+    code?: number
+    data?: ImageSearchResult[]
+    message?: string
+  }
+
+  type BaseResponseListPictureVO_ = {
+    code?: number
+    data?: PictureVO[]
+    message?: string
+  }
+
   type BaseResponseListSpaceLevel_ = {
     code?: number
     data?: SpaceLevel[]
@@ -268,6 +280,11 @@ declare namespace API {
     id?: string
   }
 
+  type ImageSearchResult = {
+    fromUrl?: string
+    thumbUrl?: string
+  }
+
   type LoginUserVO = {
     /** 创建时间 */
     createTime?: string
@@ -377,6 +394,8 @@ declare namespace API {
     isDelete?: number
     /** 图片名称 */
     name?: string
+    /** 图片主色调 */
+    picColor?: string
     /** 图片格式 */
     picFormat?: string
     /** 图片高度 */
@@ -412,6 +431,19 @@ declare namespace API {
     userId?: string
   }
 
+  type PictureEditByBatchRequest = {
+    /** 分类 */
+    categoryId?: string
+    /** 命名规则 */
+    nameRule?: string
+    /** 图片id列表 */
+    pictureIdList?: number[]
+    /** 空间id */
+    spaceId?: string
+    /** 标签 */
+    tags?: number[]
+  }
+
   type PictureEditRequest = {
     /** 分类id */
     categoryId?: string
@@ -430,6 +462,8 @@ declare namespace API {
     categoryId?: string
     /** 当前页号 */
     current?: number
+    /** 结束编辑时间 */
+    endEditTime?: string
     /** id */
     id?: string
     /** 简介 */
@@ -464,6 +498,8 @@ declare namespace API {
     sortOrder?: string
     /** 空间 id */
     spaceId?: string
+    /** 开始编辑时间 */
+    startEditTime?: string
     /** 标签 */
     tags?: number[]
     /** 用户 id */
@@ -521,6 +557,8 @@ declare namespace API {
     introduction?: string
     /** 图片名称 */
     name?: string
+    /** 图片主色调 */
+    picColor?: string
     /** 图片格式 */
     picFormat?: string
     /** 图片高度 */
@@ -546,6 +584,18 @@ declare namespace API {
     user?: UserVO
     /** 用户 id */
     userId?: string
+  }
+
+  type SearchPictureByColorRequest = {
+    /** 图片主色调 */
+    picColor?: string
+    /** 空间id */
+    spaceId?: string
+  }
+
+  type SearchPictureByPictureRequest = {
+    /** 图片id */
+    pictureId?: string
   }
 
   type Space = {

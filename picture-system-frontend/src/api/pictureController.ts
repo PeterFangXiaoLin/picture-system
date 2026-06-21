@@ -32,6 +32,21 @@ export async function editPictureUsingPost(
   })
 }
 
+/** 批量修改图片 POST /api/picture/edit/batch */
+export async function editPictureByBatchUsingPost(
+  body: API.PictureEditByBatchRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseBoolean_>('/api/picture/edit/batch', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
 /** 根据id获取图片（仅管理员可用） 获取图片 GET /api/picture/get */
 export async function getPictureAdminVoByIdUsingGet(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
@@ -113,6 +128,36 @@ export async function doPictureReviewUsingPost(
   options?: { [key: string]: any }
 ) {
   return request<API.BaseResponseBoolean_>('/api/picture/review', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** 以颜色搜图 以颜色搜图 POST /api/picture/search/color */
+export async function searchPictureByColorUsingPost(
+  body: API.SearchPictureByColorRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseListPictureVO_>('/api/picture/search/color', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** 以图搜图 以图搜图 POST /api/picture/search/picture */
+export async function searchPictureUsingPost(
+  body: API.SearchPictureByPictureRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseListImageSearchResult_>('/api/picture/search/picture', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

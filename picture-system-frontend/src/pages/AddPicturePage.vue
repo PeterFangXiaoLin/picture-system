@@ -82,7 +82,7 @@
           :loading="submitting"
           class="submit-button"
         >
-          <template v-if="!submitting">创建图片</template>
+          <template v-if="!submitting">{{route.query?.id ? '创建图片' : '更新图片'}}</template>
           <template v-else>创建中...</template>
         </a-button>
       </a-form-item>

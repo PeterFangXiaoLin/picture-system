@@ -46,36 +46,61 @@
             <a-descriptions-item label="大小">
               {{ formatSize(picture.picSize) }}
             </a-descriptions-item>
+            <a-descriptions-item label="主色调">
+              <a-space>
+                {{ picture.picColor ?? '-' }}
+                <div
+                  v-if="picture.picColor"
+                  :style="{
+                    backgroundColor: toHexColor(picture.picColor),
+                    width: '16px',
+                    height: '16px',
+                  }"
+                />
+              </a-space>
+            </a-descriptions-item>
           </a-descriptions>
           <!-- 图片操作 -->
-          <a-space wrap>
-            <a-button type="primary" @click="doDownload">
-              免费下载
-              <template #icon>
-                <DownloadOutlined />
-              </template>
+          <a-space wrap class="picture-actions">
+            <a-button type="primary" class="picture-action-btn" @click="doDownload">
+              <DownloadOutlined />
+              <span>免费下载</span>
             </a-button>
-            <a-button v-if="canEdit" :icon="h(EditOutlined)" type="default" @click="doEdit">
-              编辑
+            <a-button type="primary" ghost class="picture-action-btn" @click="doShare">
+              <ShareAltOutlined />
+              <span>分享</span>
             </a-button>
-            <a-button v-if="canEdit" :icon="h(DeleteOutlined)" danger @click="doDelete">
-              删除
+            <a-button v-if="canEdit" type="default" class="picture-action-btn" @click="doEdit">
+              <EditOutlined />
+              <span>编辑</span>
+            </a-button>
+            <a-button v-if="canEdit" danger class="picture-action-btn" @click="doDelete">
+              <DeleteOutlined />
+              <span>删除</span>
             </a-button>
           </a-space>
         </a-card>
       </a-col>
     </a-row>
+    <!-- 图片分享-->
+    <ShareModal ref="shareModalRef" :link="shareLink" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, h, onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { deletePictureUsingPost, getPictureVoByIdUsingGet } from '@/api/pictureController.ts'
 import { message } from 'ant-design-vue'
-import { DeleteOutlined, DownloadOutlined, EditOutlined } from '@ant-design/icons-vue'
+import {
+  DeleteOutlined,
+  DownloadOutlined,
+  EditOutlined,
+  ShareAltOutlined,
+} from '@ant-design/icons-vue'
 import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'
 import { useRouter } from 'vue-router'
-import { downloadImage, formatSize } from '@/utils'
+import { downloadImage, formatSize, toHexColor } from '@/utils'
+import ShareModal from '@/components/ShareModal.vue'
 
 interface Props {
   id: string
@@ -127,7 +152,7 @@ const doEdit = () => {
     query: {
       id: picture.value.id,
       spaceId: picture.value.spaceId,
-    }
+    },
   })
 }
 
@@ -149,10 +174,36 @@ const doDelete = async () => {
 const doDownload = () => {
   downloadImage(picture.value.url)
 }
+
+// === 分享图片 ===
+// 分享窗口引用
+const shareModalRef = ref()
+// 分享链接
+const shareLink = ref<string>('')
+
+// 分享
+const doShare = () => {
+  shareLink.value = `${window.location.protocol}//${window.location.host}/picture/${picture.value.id}`
+  if (shareModalRef.value) {
+    shareModalRef.value.openModal()
+  }
+}
+
 </script>
 
 <style scoped>
 #pictureDetailPage {
   margin-bottom: 16px;
+}
+
+.picture-actions :deep(.picture-action-btn) {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px;
+}
+
+.picture-actions :deep(.picture-action-btn span) {
+  line-height: 1;
 }
 </style>
