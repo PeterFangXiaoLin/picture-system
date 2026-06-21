@@ -58,5 +58,11 @@ public class UploadPictureResult {
      */
     @ApiModelProperty(value = "图片格式")
     private String picFormat;
-  
+
+    /**
+     * 图片主色调
+     */
+    @ApiModelProperty(value = "图片主色调")
+    private String picColor;
+
 }

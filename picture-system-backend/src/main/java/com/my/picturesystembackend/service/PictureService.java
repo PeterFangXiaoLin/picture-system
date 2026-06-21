@@ -12,6 +12,7 @@ import com.my.picturesystembackend.model.vo.PictureVO;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
 * @author helloworld
@@ -180,4 +181,30 @@ public interface PictureService extends IService<Picture> {
      * @return 图片创建时间
      */
     LocalDateTime getPictureCreateTime(Long pictureId);
+
+    /**
+     * 以颜色搜图（只查空间内的）
+     *
+     * @param spaceId   空间id
+     * @param picColor  颜色
+     * @param loginUser 登录的用户
+     * @return 图片列表
+     */
+    List<PictureVO> searchPictureByColor(Long spaceId, String picColor, User loginUser);
+
+    /**
+     * 获取图片主色调
+     *
+     * @param pictureUrl 图片 URL
+     * @return 主色调，格式 0xRRGGBB
+     */
+    String getPicturePicColor(String pictureUrl);
+
+    /**
+     * 批量编辑图片
+     *
+     * @param pictureEditByBatchRequest 批量编辑图片请求
+     * @param loginUser                 登录用户
+     */
+    void editPictureByBatch(PictureEditByBatchRequest pictureEditByBatchRequest, User loginUser);
 }

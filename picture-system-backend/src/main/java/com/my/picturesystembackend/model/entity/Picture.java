@@ -124,8 +124,17 @@ public class Picture implements Serializable {
     @TableField(value = "reviewTime")
     private LocalDateTime reviewTime;
 
+    /**
+     * 空间id
+     */
     @TableField(value = "spaceId")
     private Long spaceId;
+
+    /**
+     * 图片主色调
+     */
+    @TableField(value = "picColor")
+    private String picColor;
 
     /**
      * 创建时间

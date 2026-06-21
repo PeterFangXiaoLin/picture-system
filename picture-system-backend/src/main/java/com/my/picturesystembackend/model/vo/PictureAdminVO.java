@@ -142,6 +142,12 @@ public class PictureAdminVO implements Serializable {
     private LocalDateTime reviewTime;
 
     /**
+     * 图片主色调
+     */
+    @ApiModelProperty(value = "图片主色调")
+    private String picColor;
+
+    /**
      * 创建时间
      */
     @ApiModelProperty(value = "创建时间")

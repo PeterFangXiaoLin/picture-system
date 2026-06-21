@@ -2,14 +2,21 @@ package com.my.picturesystembackend.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.my.picturesystembackend.annotation.AuthCheck;
+import com.my.picturesystembackend.api.imagesearch.ImageSearchApiFacade;
+import com.my.picturesystembackend.api.imagesearch.model.ImageSearchResult;
 import com.my.picturesystembackend.common.BaseResponse;
 import com.my.picturesystembackend.common.DeleteRequest;
 import com.my.picturesystembackend.common.ResultUtils;
 import com.my.picturesystembackend.constant.UserConstant;
+import com.my.picturesystembackend.exception.ErrorCode;
+import com.my.picturesystembackend.exception.ThrowUtils;
 import com.my.picturesystembackend.model.dto.picture.*;
+import com.my.picturesystembackend.model.entity.Picture;
+import com.my.picturesystembackend.model.entity.User;
 import com.my.picturesystembackend.model.vo.PictureAdminVO;
 import com.my.picturesystembackend.model.vo.PictureVO;
 import com.my.picturesystembackend.service.PictureService;
+import com.my.picturesystembackend.service.UserService;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 @RestController
 @RequestMapping("/picture")
@@ -25,6 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 public class PictureController {
 
     private final PictureService pictureService;
+    private final UserService userService;
 
     /**
      * 上传图片
@@ -193,4 +202,58 @@ public class PictureController {
             HttpServletRequest request) {
         return ResultUtils.success(pictureService.uploadPictureByBatch(pictureUploadByBatchRequest, request));
     }
+
+    /**
+     * 以图搜图
+     *
+     * @param searchPictureByPictureRequest 以图搜图请求
+     * @param request                       request
+     * @return 图片列表
+     */
+    @PostMapping("/search/picture")
+    @ApiOperation(value = "以图搜图", notes = "以图搜图")
+    public BaseResponse<List<ImageSearchResult>> searchPicture(@RequestBody SearchPictureByPictureRequest searchPictureByPictureRequest, HttpServletRequest request) {
+        ThrowUtils.throwIf(searchPictureByPictureRequest == null, ErrorCode.PARAMS_ERROR);
+        Long pictureId = searchPictureByPictureRequest.getPictureId();
+        ThrowUtils.throwIf(pictureId == null || pictureId <= 0, ErrorCode.PARAMS_ERROR);
+        Picture oldPicture = pictureService.getById(pictureId);
+        ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
+        List<ImageSearchResult> imageSearchResults = ImageSearchApiFacade.searchImage(oldPicture.getUrl());
+        return ResultUtils.success(imageSearchResults);
+    }
+
+    /**
+     * 以颜色搜图
+     *
+     * @param searchPictureByColorRequest 以颜色搜图请求
+     * @param request                     request
+     * @return 图片列表
+     */
+    @PostMapping("/search/color")
+    @ApiOperation(value = "以颜色搜图", notes = "以颜色搜图")
+    public BaseResponse<List<PictureVO>> searchPictureByColor(@RequestBody SearchPictureByColorRequest searchPictureByColorRequest, HttpServletRequest request) {
+        ThrowUtils.throwIf(searchPictureByColorRequest == null, ErrorCode.PARAMS_ERROR);
+        String picColor = searchPictureByColorRequest.getPicColor();
+        Long spaceId = searchPictureByColorRequest.getSpaceId();
+        User loginUser = userService.getLoginUser(request);
+        List<PictureVO> result = pictureService.searchPictureByColor(spaceId, picColor, loginUser);
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 批量修改图片
+     *
+     * @param pictureEditByBatchRequest 批量修改图片请求
+     * @param request request
+     * @return 修改结果
+     */
+    @PostMapping("/edit/batch")
+    @ApiOperation(value = "批量修改图片")
+    public BaseResponse<Boolean> editPictureByBatch(@RequestBody PictureEditByBatchRequest pictureEditByBatchRequest, HttpServletRequest request) {
+        ThrowUtils.throwIf(pictureEditByBatchRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        pictureService.editPictureByBatch(pictureEditByBatchRequest, loginUser);
+        return ResultUtils.success(true);
+    }
+
 }

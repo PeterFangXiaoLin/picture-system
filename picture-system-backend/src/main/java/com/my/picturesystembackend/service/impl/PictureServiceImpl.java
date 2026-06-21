@@ -17,6 +17,7 @@ import com.my.picturesystembackend.constant.PictureConstant;
 import com.my.picturesystembackend.exception.BusinessException;
 import com.my.picturesystembackend.exception.ErrorCode;
 import com.my.picturesystembackend.exception.ThrowUtils;
+import com.my.picturesystembackend.manager.CosManager;
 import com.my.picturesystembackend.manager.upload.FilePictureUpload;
 import com.my.picturesystembackend.manager.upload.PictureUploadTemplate;
 import com.my.picturesystembackend.manager.upload.UrlPictureUpload;
@@ -28,6 +29,7 @@ import com.my.picturesystembackend.model.enums.PictureReviewStatusEnum;
 import com.my.picturesystembackend.model.vo.PictureAdminVO;
 import com.my.picturesystembackend.model.vo.PictureVO;
 import com.my.picturesystembackend.service.*;
+import com.my.picturesystembackend.utils.ColorSimilarUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -45,9 +47,11 @@ import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.awt.*;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -75,6 +79,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     private final FilePictureUpload filePictureUpload;
 
     private final UrlPictureUpload urlPictureUpload;
+
+    private final CosManager cosManager;
 
     private final PictureMapper pictureMapper;
 
@@ -188,6 +194,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         picture.setUserId(loginUser.getId());
         // 补充spaceId填充
         picture.setSpaceId(spaceId);
+        // 补充主色调
+        picture.setPicColor(uploadPictureResult.getPicColor());
 
         // 补充审核参数
         this.fillReviewParams(picture, loginUser);
@@ -531,66 +539,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         }
 
         Page<PictureVO> pictureVOPage = pictureMapper.listPictureVOByPage(new Page<>(current, size), pictureQueryRequest);
-        
-        // 填充标签列表（优化：批量查询）
-        List<PictureVO> records = pictureVOPage.getRecords();
-        if (CollUtil.isEmpty(records)) {
-            return pictureVOPage;
-        }
-        
-        // 1. 收集所有需要查询的标签 ID（去重）
-        List<Long> allTagIds = records.stream()
-                .map(PictureVO::getTags)
-                .filter(StrUtil::isNotBlank)
-                .flatMap(tags -> StrUtil.split(tags, StrUtil.COMMA).stream())
-                .map(Long::parseLong)
-                .distinct()
-                .collect(Collectors.toList());
-        
-        // 2. 批量查询所有标签（只查一次数据库）
-        if (CollUtil.isEmpty(allTagIds)) {
-            return pictureVOPage;
-        }
-        List<Tag> allTags = tagService.listByIds(allTagIds);
-        
-        // 3. 将标签按 ID 分组为 Map，方便快速查找
-        Map<Long, Tag> tagMap = allTags.stream()
-                .collect(Collectors.toMap(Tag::getId, tag -> tag));
-        
-        // 4. 为每条记录填充标签列表
-        for (PictureVO record : records) {
-            String tags = record.getTags();
-            if (StrUtil.isBlank(tags)) {
-                continue;
-            }
-            
-            List<Tag> recordTags = StrUtil.split(tags, StrUtil.COMMA).stream()
-                    .map(Long::parseLong)
-                    .map(tagMap::get)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-            
-            record.setTagVOList(tagService.getTagVOList(recordTags));
-        }
 
-        // 填充点赞信息
         User loginUser = userService.getLoginUserPermitNull(request);
-        Map<Long, Boolean> pictureIdHasThumbMap = new HashMap<>();
-        if (loginUser != null) {
-            Set<Long> pictureIdSet = records.stream()
-                    .map(PictureVO::getId)
-                    .collect(Collectors.toSet());
-            // 获取点赞记录
-            List<Thumb> thumbList = thumbService.lambdaQuery()
-                    .eq(Thumb::getUserId, loginUser.getId())
-                    .in(Thumb::getPictureId, pictureIdSet)
-                    .list();
-
-            thumbList.forEach(pictureThumb -> pictureIdHasThumbMap.put(pictureThumb.getPictureId(), true));
-        }
-
-        // 为每条记录设置是否已点赞
-        records.forEach(pictureVO -> pictureVO.setHasThumb(pictureIdHasThumbMap.getOrDefault(pictureVO.getId(), false)));
+        fillPictureVOList(pictureVOPage.getRecords(), loginUser);
 
         return pictureVOPage;
     }
@@ -631,46 +582,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Page<PictureVO> page = new Page<>(current, size);
         Page<PictureVO> pictureVOPage = pictureMapper.listPictureVOByPage(page, pictureQueryRequest);
 
-        // 填充标签列表（优化：批量查询）
-        List<PictureVO> records = pictureVOPage.getRecords();
-        if (CollUtil.isEmpty(records)) {
-            return pictureVOPage;
-        }
-
-        // 1. 收集所有需要查询的标签 ID（去重）
-        List<Long> allTagIds = records.stream()
-                .map(PictureVO::getTags)
-                .filter(StrUtil::isNotBlank)
-                .flatMap(tags -> StrUtil.split(tags, StrUtil.COMMA).stream())
-                .map(Long::parseLong)
-                .distinct()
-                .collect(Collectors.toList());
-
-        // 2. 批量查询所有标签（只查一次数据库）
-        if (CollUtil.isEmpty(allTagIds)) {
-            return pictureVOPage;
-        }
-        List<Tag> allTags = tagService.listByIds(allTagIds);
-
-        // 3. 将标签按 ID 分组为 Map，方便快速查找
-        Map<Long, Tag> tagMap = allTags.stream()
-                .collect(Collectors.toMap(Tag::getId, tag -> tag));
-
-        // 4. 为每条记录填充标签列表
-        for (PictureVO record : records) {
-            String tags = record.getTags();
-            if (StrUtil.isBlank(tags)) {
-                continue;
-            }
-
-            List<Tag> recordTags = StrUtil.split(tags, StrUtil.COMMA).stream()
-                    .map(Long::parseLong)
-                    .map(tagMap::get)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-
-            record.setTagVOList(tagService.getTagVOList(recordTags));
-        }
+        User loginUser = userService.getLoginUserPermitNull(request);
+        fillPictureVOList(pictureVOPage.getRecords(), loginUser);
 
         // 存入缓存
         String cacheValue = JSONUtil.toJsonStr(pictureVOPage);
@@ -849,6 +762,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
                     picture.setTags(StrUtil.join(StrUtil.COMMA, tags));
                 }
 
+                // 补充主色调
+                picture.setPicColor(uploadPictureResult.getPicColor());
+
                 // 补充审核参数
                 this.fillReviewParams(picture, loginUser);
 
@@ -944,6 +860,189 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         int expireDays = RandomUtil.randomInt(3, 7);
         redisTemplate.expire(batchKey, expireDays, TimeUnit.DAYS);
         return picture.getCreateTime();
+    }
+
+    @Override
+    public List<PictureVO> searchPictureByColor(Long spaceId, String picColor, User loginUser) {
+        // 1. 校验参数
+        ThrowUtils.throwIf(spaceId == null || StrUtil.isBlank(picColor), ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.NO_AUTH_ERROR);
+        // 2. 校验空间权限
+        Space space = spaceService.getById(spaceId);
+        ThrowUtils.throwIf(space == null, ErrorCode.PARAMS_ERROR, "空间不存在");
+        if (!space.getUserId().equals(loginUser.getId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "没有空间访问权限");
+        }
+
+        // 3. 查询该空间下的所有有picColor的图片
+        List<Picture> pictureList = this.lambdaQuery()
+                .eq(Picture::getSpaceId, spaceId)
+                .isNotNull(Picture::getPicColor)
+                .list();
+        if (CollUtil.isEmpty(pictureList)) {
+            return Collections.emptyList();
+        }
+
+        // 将目标颜色转化为 color 对象，按相似度排序并取前 12 个
+        Color targetColor = Color.decode(picColor);
+        List<Picture> sortedPictureList = pictureList.stream()
+                .sorted(Comparator.comparingDouble(picture -> {
+                    String hexColor = picture.getPicColor();
+                    if (StrUtil.isBlank(hexColor)) {
+                        return Double.MAX_VALUE;
+                    }
+                    Color pictureColor = Color.decode(hexColor);
+                    return -ColorSimilarUtils.calculateSimilarity(targetColor, pictureColor);
+                }))
+                .limit(12)
+                .collect(Collectors.toList());
+
+        List<PictureVO> pictureVOList = sortedPictureList.stream()
+                .map(picture -> BeanUtil.toBean(picture, PictureVO.class))
+                .collect(Collectors.toList());
+        fillPictureVOList(pictureVOList, loginUser);
+        return pictureVOList;
+    }
+
+    /**
+     * 批量填充 PictureVO 的标签列表和点赞信息
+     */
+    private void fillPictureVOList(List<PictureVO> records, User loginUser) {
+        if (CollUtil.isEmpty(records)) {
+            return;
+        }
+
+        // 1. 收集所有需要查询的标签 ID（去重）
+        List<Long> allTagIds = records.stream()
+                .map(PictureVO::getTags)
+                .filter(StrUtil::isNotBlank)
+                .flatMap(tags -> StrUtil.split(tags, StrUtil.COMMA).stream())
+                .map(Long::parseLong)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // 2. 批量查询标签并填充
+        if (CollUtil.isNotEmpty(allTagIds)) {
+            List<Tag> allTags = tagService.listByIds(allTagIds);
+            Map<Long, Tag> tagMap = allTags.stream()
+                    .collect(Collectors.toMap(Tag::getId, tag -> tag));
+
+            for (PictureVO record : records) {
+                String tags = record.getTags();
+                if (StrUtil.isBlank(tags)) {
+                    continue;
+                }
+
+                List<Tag> recordTags = StrUtil.split(tags, StrUtil.COMMA).stream()
+                        .map(Long::parseLong)
+                        .map(tagMap::get)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+
+                record.setTagVOList(tagService.getTagVOList(recordTags));
+            }
+        }
+
+        // 3. 填充点赞信息
+        Map<Long, Boolean> pictureIdHasThumbMap = new HashMap<>();
+        if (loginUser != null) {
+            Set<Long> pictureIdSet = records.stream()
+                    .map(PictureVO::getId)
+                    .collect(Collectors.toSet());
+            List<Thumb> thumbList = thumbService.lambdaQuery()
+                    .eq(Thumb::getUserId, loginUser.getId())
+                    .in(Thumb::getPictureId, pictureIdSet)
+                    .list();
+
+            thumbList.forEach(pictureThumb -> pictureIdHasThumbMap.put(pictureThumb.getPictureId(), true));
+        }
+
+        records.forEach(pictureVO -> pictureVO.setHasThumb(pictureIdHasThumbMap.getOrDefault(pictureVO.getId(), false)));
+    }
+
+    @Override
+    public String getPicturePicColor(String pictureUrl) {
+        ThrowUtils.throwIf(StrUtil.isBlank(pictureUrl), ErrorCode.PARAMS_ERROR, "图片地址不能为空");
+        try {
+            String picColor = cosManager.getImageDominantColor(pictureUrl);
+            ThrowUtils.throwIf(StrUtil.isBlank(picColor), ErrorCode.OPERATION_ERROR, "获取主色调失败");
+            return picColor;
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, e.getMessage());
+        } catch (RuntimeException e) {
+            log.error("获取图片主色调失败, url={}", pictureUrl, e);
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "获取主色调失败");
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void editPictureByBatch(PictureEditByBatchRequest pictureEditByBatchRequest, User loginUser) {
+        List<Long> pictureIdList = pictureEditByBatchRequest.getPictureIdList();
+        Long spaceId = pictureEditByBatchRequest.getSpaceId();
+        Long categoryId = pictureEditByBatchRequest.getCategoryId();
+        List<Long> tags = pictureEditByBatchRequest.getTags();
+        String nameRule = pictureEditByBatchRequest.getNameRule();
+
+        // 1. 校验参数
+        ThrowUtils.throwIf(CollUtil.isEmpty(pictureIdList), ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(spaceId == null, ErrorCode.PARAMS_ERROR); // 暂时仅支持批量编辑空间中的图片
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.NO_AUTH_ERROR);
+        // 2. 校验空间权限
+        Space space = spaceService.getById(spaceId);
+        ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
+        if (!loginUser.getId().equals(space.getUserId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "空间权限不足");
+        }
+
+        // 3. 查询旧图片
+        List<Picture> pictureList = this.lambdaQuery()
+                .select(Picture::getId, Picture::getSpaceId)
+                .eq(Picture::getSpaceId, space.getId())
+                .in(Picture::getId, pictureIdList)
+                .list();
+        if (CollUtil.isEmpty(pictureList)) {
+            return;
+        }
+        // 4. 设置分类和标签
+        Category category = categoryService.getById(categoryId);
+        pictureList.forEach(picture -> {
+            if (category != null) {
+                picture.setCategoryId(category.getId());
+            }
+            if (CollUtil.isNotEmpty(tags)) {
+                picture.setTags(StrUtil.join(StrUtil.COMMA, tags));
+            }
+        });
+
+        // 批量重命名
+        fillPictureWithNameRule(pictureList, nameRule);
+
+        // 5. 更新数据库
+        boolean result = this.updateBatchById(pictureList);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "操作失败，数据库异常");
+    }
+
+    /**
+     * nameRule 格式： 图片{序号}
+     *
+     * @param pictureList 图片列表
+     * @param nameRule nameRule
+     */
+    private void fillPictureWithNameRule(List<Picture> pictureList, String nameRule) {
+        if (CollUtil.isEmpty(pictureList) || StrUtil.isBlank(nameRule)) {
+            return;
+        }
+        long count = 1;
+        try {
+            for (Picture picture : pictureList) {
+                String pictureName = nameRule.replaceAll("\\{序号}", String.valueOf(count++));
+                picture.setName(pictureName);
+            }
+        } catch (Exception e) {
+            log.error("批量重命名错误", e);
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "名称解析错误");
+        }
     }
 }
 

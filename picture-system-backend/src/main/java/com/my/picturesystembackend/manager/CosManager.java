@@ -1,7 +1,10 @@
 package com.my.picturesystembackend.manager;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.my.picturesystembackend.config.CosClientConfig;
 import com.my.picturesystembackend.model.enums.PictureFileSuffixEnum;
 import com.qcloud.cos.COSClient;
@@ -108,5 +111,54 @@ public class CosManager {
      */
     public void deleteObject(String key) {
         cosClient.deleteObject(cosClientConfig.getBucket(), key);
+    }
+
+    /**
+     * 根据图片 URL 获取主色调
+     * https://cloud.tencent.com/document/product/460/6928
+     *
+     * @param pictureUrl 图片 URL
+     * @return 主色调，格式 0xRRGGBB
+     */
+    public String getImageDominantColor(String pictureUrl) {
+        String key = parseObjectKeyFromUrl(pictureUrl);
+        GetObjectRequest getObjectRequest = new GetObjectRequest(cosClientConfig.getBucket(), key);
+        getObjectRequest.putCustomQueryParameter("imageAve", null);
+        COSObject cosObject = null;
+        try {
+            cosObject = cosClient.getObject(getObjectRequest);
+            try (COSObjectInputStream objectContent = cosObject.getObjectContent()) {
+                String responseBody = IoUtil.readUtf8(objectContent);
+                JSONObject jsonObject = JSONUtil.parseObj(responseBody);
+                return jsonObject.getStr("RGB");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("获取图片主色调失败, url=" + pictureUrl, e);
+        } finally {
+            IoUtil.close(cosObject);
+        }
+    }
+
+    /**
+     * 从图片 URL 解析 COS 对象 key
+     *
+     * @param pictureUrl 图片 URL
+     * @return 对象 key
+     */
+    private String parseObjectKeyFromUrl(String pictureUrl) {
+        if (StrUtil.isBlank(pictureUrl)) {
+            throw new IllegalArgumentException("图片地址不能为空");
+        }
+        String host = StrUtil.removeSuffix(cosClientConfig.getHost().trim(), "/");
+        String url = pictureUrl.trim();
+        if (!url.startsWith(host)) {
+            throw new IllegalArgumentException("非本系统的图片地址");
+        }
+        String key = url.substring(host.length());
+        key = key.replaceAll("^/+", "/");
+        if (!key.startsWith("/")) {
+            key = "/" + key;
+        }
+        return key;
     }
 }
