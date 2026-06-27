@@ -7,6 +7,7 @@ import com.my.picturesystembackend.common.DeleteRequest;
 import com.my.picturesystembackend.model.dto.user.*;
 import com.my.picturesystembackend.model.entity.User;
 import com.my.picturesystembackend.model.vo.LoginUserVO;
+import com.my.picturesystembackend.model.vo.OutPaintingQuotaVO;
 import com.my.picturesystembackend.model.vo.UserVO;
 
 import javax.servlet.http.HttpServletRequest;
@@ -125,4 +126,19 @@ public interface UserService extends IService<User> {
      * @return 是否为管理员
      */
     boolean isAdmin(User user);
+
+    /**
+     * 预扣 AI 扩图次数
+     */
+    void deductOutPaintingQuota(User user);
+
+    /**
+     * 退还 AI 扩图次数
+     */
+    void refundOutPaintingQuota(Long userId);
+
+    /**
+     * 获取 AI 扩图剩余次数信息
+     */
+    OutPaintingQuotaVO getOutPaintingQuotaVO(User user);
 }

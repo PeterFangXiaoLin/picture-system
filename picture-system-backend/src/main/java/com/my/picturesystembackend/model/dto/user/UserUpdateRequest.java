@@ -45,5 +45,11 @@ public class UserUpdateRequest implements Serializable {
     @ApiModelProperty(value = "用户角色：user/admin")
     private String userRole;
 
+    /**
+     * AI 扩图剩余次数
+     */
+    @ApiModelProperty(value = "AI 扩图剩余次数")
+    private Integer outPaintingQuota;
+
     private static final long serialVersionUID = 1L;
 }

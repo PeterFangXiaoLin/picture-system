@@ -1,20 +1,29 @@
 package com.my.picturesystembackend.controller;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.my.picturesystembackend.annotation.AuthCheck;
+import com.my.picturesystembackend.api.aliyunai.model.GetOutPaintingTaskResponse;
 import com.my.picturesystembackend.api.imagesearch.ImageSearchApiFacade;
 import com.my.picturesystembackend.api.imagesearch.model.ImageSearchResult;
 import com.my.picturesystembackend.common.BaseResponse;
 import com.my.picturesystembackend.common.DeleteRequest;
 import com.my.picturesystembackend.common.ResultUtils;
 import com.my.picturesystembackend.constant.UserConstant;
+import com.my.picturesystembackend.exception.BusinessException;
 import com.my.picturesystembackend.exception.ErrorCode;
 import com.my.picturesystembackend.exception.ThrowUtils;
+import com.my.picturesystembackend.model.dto.outpainting.OutPaintingTaskQueryRequest;
+import com.my.picturesystembackend.model.dto.outpainting.RetryOutPaintingTaskRequest;
 import com.my.picturesystembackend.model.dto.picture.*;
 import com.my.picturesystembackend.model.entity.Picture;
 import com.my.picturesystembackend.model.entity.User;
+import com.my.picturesystembackend.model.vo.OutPaintingQuotaVO;
+import com.my.picturesystembackend.model.vo.OutPaintingTaskStatisticsVO;
+import com.my.picturesystembackend.model.vo.OutPaintingTaskVO;
 import com.my.picturesystembackend.model.vo.PictureAdminVO;
 import com.my.picturesystembackend.model.vo.PictureVO;
+import com.my.picturesystembackend.service.OutPaintingTaskService;
 import com.my.picturesystembackend.service.PictureService;
 import com.my.picturesystembackend.service.UserService;
 import io.swagger.annotations.ApiOperation;
@@ -34,6 +43,7 @@ public class PictureController {
 
     private final PictureService pictureService;
     private final UserService userService;
+    private final OutPaintingTaskService outPaintingTaskService;
 
     /**
      * 上传图片
@@ -254,6 +264,105 @@ public class PictureController {
         User loginUser = userService.getLoginUser(request);
         pictureService.editPictureByBatch(pictureEditByBatchRequest, loginUser);
         return ResultUtils.success(true);
+    }
+
+    /**
+     * 创建 AI 扩图任务
+     */
+    @PostMapping("/out_painting/create_task")
+    @ApiOperation(value = "创建 AI 扩图任务")
+    public BaseResponse<OutPaintingTaskVO> createPictureOutPaintingTask(
+            @RequestBody CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest,
+            HttpServletRequest request) {
+        if (createPictureOutPaintingTaskRequest == null || createPictureOutPaintingTaskRequest.getPictureId() == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        OutPaintingTaskVO response = outPaintingTaskService.createOutPaintingTask(createPictureOutPaintingTaskRequest, loginUser);
+        return ResultUtils.success(response);
+    }
+
+    /**
+     * 查询 AI 扩图任务（同步阿里云状态）
+     */
+    @GetMapping("/out_painting/get_task")
+    @ApiOperation(value = "查询 AI 扩图任务")
+    public BaseResponse<GetOutPaintingTaskResponse> getPictureOutPaintingTask(String taskId, HttpServletRequest request) {
+        ThrowUtils.throwIf(StrUtil.isBlank(taskId), ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        GetOutPaintingTaskResponse task = outPaintingTaskService.getAndSyncOutPaintingTask(taskId, loginUser);
+        return ResultUtils.success(task);
+    }
+
+    /**
+     * 根据 id 查询 AI 扩图任务记录
+     */
+    @GetMapping("/out_painting/task/get")
+    @ApiOperation(value = "根据 id 查询 AI 扩图任务记录")
+    public BaseResponse<OutPaintingTaskVO> getOutPaintingTaskById(Long id, HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        OutPaintingTaskVO taskVO = outPaintingTaskService.getOutPaintingTaskVOById(id, loginUser, true);
+        return ResultUtils.success(taskVO);
+    }
+
+    /**
+     * 分页查询当前用户的 AI 扩图任务
+     */
+    @PostMapping("/out_painting/task/list/page")
+    @ApiOperation(value = "分页查询当前用户的 AI 扩图任务")
+    public BaseResponse<Page<OutPaintingTaskVO>> listOutPaintingTaskByPage(
+            @RequestBody OutPaintingTaskQueryRequest outPaintingTaskQueryRequest,
+            HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        Page<OutPaintingTaskVO> taskPage = outPaintingTaskService.listOutPaintingTaskVOByPage(outPaintingTaskQueryRequest, loginUser);
+        return ResultUtils.success(taskPage);
+    }
+
+    /**
+     * 重试 AI 扩图任务
+     */
+    @PostMapping("/out_painting/task/retry")
+    @ApiOperation(value = "重试 AI 扩图任务")
+    public BaseResponse<OutPaintingTaskVO> retryOutPaintingTask(
+            @RequestBody RetryOutPaintingTaskRequest retryOutPaintingTaskRequest,
+            HttpServletRequest request) {
+        ThrowUtils.throwIf(retryOutPaintingTaskRequest == null || retryOutPaintingTaskRequest.getId() == null,
+                ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        OutPaintingTaskVO taskVO = outPaintingTaskService.retryOutPaintingTask(retryOutPaintingTaskRequest, loginUser);
+        return ResultUtils.success(taskVO);
+    }
+
+    /**
+     * 分页查询所有 AI 扩图任务（管理员）
+     */
+    @PostMapping("/out_painting/task/list/page/admin")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @ApiOperation(value = "分页查询所有 AI 扩图任务（管理员）")
+    public BaseResponse<Page<OutPaintingTaskVO>> listOutPaintingTaskByPageAdmin(
+            @RequestBody OutPaintingTaskQueryRequest outPaintingTaskQueryRequest) {
+        Page<OutPaintingTaskVO> taskPage = outPaintingTaskService.listOutPaintingTaskVOByPageAdmin(outPaintingTaskQueryRequest);
+        return ResultUtils.success(taskPage);
+    }
+
+    /**
+     * 获取 AI 扩图任务统计（管理员）
+     */
+    @GetMapping("/out_painting/task/statistics")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @ApiOperation(value = "获取 AI 扩图任务统计（管理员）")
+    public BaseResponse<OutPaintingTaskStatisticsVO> getOutPaintingTaskStatistics() {
+        return ResultUtils.success(outPaintingTaskService.getOutPaintingTaskStatistics());
+    }
+
+    /**
+     * 获取当前用户 AI 扩图剩余次数
+     */
+    @GetMapping("/out_painting/quota")
+    @ApiOperation(value = "获取当前用户 AI 扩图剩余次数")
+    public BaseResponse<OutPaintingQuotaVO> getOutPaintingQuota(HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        return ResultUtils.success(outPaintingTaskService.getOutPaintingQuota(loginUser));
     }
 
 }

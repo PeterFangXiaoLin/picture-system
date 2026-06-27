@@ -5,6 +5,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
 import com.my.picturesystembackend.config.CosClientConfig;
 import com.my.picturesystembackend.exception.BusinessException;
 import com.my.picturesystembackend.exception.ErrorCode;
@@ -40,6 +41,9 @@ public abstract class PictureUploadTemplate {
         String uploadFilename = String.format("%s_%s.%s", DateUtil.formatDate(new Date()),
                 uuid,
                 FileUtil.getSuffix(originFilename));
+        // aliyun 扩图返回的图片地址含 ？后面的后缀，导致上传失败
+        // /space/2051690063716945922/2026-06-27_H4zecGcymzKFMDXW.jpg?OSSAccessKeyId=LTAI5t7aiMEUzu1F2xPMCdFj&Expires=1782637141&Signature=7SVO4SV3qTdj0YWrSrnJd89d3Nw=
+        uploadFilename = StrUtil.subBefore(uploadFilename, "?", false);
         String uploadPath = String.format("/%s/%s", uploadPathPrefix, uploadFilename);
 
         File file = null;

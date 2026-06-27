@@ -143,3 +143,35 @@ CREATE INDEX idx_spaceId ON picture (spaceId);
 ALTER TABLE picture
     ADD COLUMN picColor varchar(16) null comment '图片主色调';
 
+-- AI 扩图任务记录表
+create table if not exists out_painting_task
+(
+    id               bigint comment 'id' primary key,
+    taskId           varchar(128)                       not null comment '阿里云任务 id',
+    pictureId        bigint                             not null comment '原图片 id',
+    userId           bigint                             not null comment '创建用户 id',
+    taskStatus       varchar(32)  default 'PENDING'     not null comment '任务状态',
+    parameters       text                               null comment '扩图参数 JSON',
+    originalImageUrl varchar(512)                       null comment '原图 url',
+    outputImageUrl   varchar(512)                       null comment '输出图像 url',
+    errorCode        varchar(128)                       null comment '错误码',
+    errorMessage     varchar(512)                       null comment '错误信息',
+    parentTaskId     bigint                             null comment '重试时关联的原任务记录 id',
+    createTime       datetime     default CURRENT_TIMESTAMP not null comment '创建时间',
+    updateTime       datetime     default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete         tinyint      default 0             not null comment '是否删除',
+    INDEX idx_userId (userId),
+    INDEX idx_pictureId (pictureId),
+    INDEX idx_taskId (taskId),
+    INDEX idx_taskStatus (taskStatus),
+    INDEX idx_createTime (createTime)
+) comment 'AI 扩图任务记录' collate = utf8mb4_unicode_ci;
+
+-- 用户表增加 AI 扩图次数
+ALTER TABLE user
+    ADD COLUMN outPaintingQuota INT DEFAULT 8 NOT NULL COMMENT 'AI 扩图剩余次数' AFTER userRole;
+
+-- 扩图任务表增加次数退还标记
+ALTER TABLE out_painting_task
+    ADD COLUMN quotaRefunded tinyint DEFAULT 0 NOT NULL COMMENT '是否已退还扩图次数' AFTER parentTaskId;
+

@@ -15,6 +15,7 @@ import com.my.picturesystembackend.exception.ErrorCode;
 import com.my.picturesystembackend.exception.ThrowUtils;
 import com.my.picturesystembackend.model.dto.user.*;
 import com.my.picturesystembackend.model.vo.LoginUserVO;
+import com.my.picturesystembackend.model.vo.OutPaintingQuotaVO;
 import com.my.picturesystembackend.model.vo.UserVO;
 import com.my.picturesystembackend.service.UserService;
 import com.my.picturesystembackend.model.entity.User;
@@ -62,6 +63,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setUserPassword(encryptPassword);
         user.setUserName(UserConstant.DEFAULT_USER_NAME);
         user.setUserRole(UserConstant.DEFAULT_ROLE);
+        user.setOutPaintingQuota(UserConstant.DEFAULT_OUT_PAINTING_QUOTA);
         boolean saveResult = this.save(user);
         ThrowUtils.throwIf(!saveResult, ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");
         return user.getId();
@@ -139,6 +141,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setUserPassword(encryptedPassword);
         if (StrUtil.isBlank(user.getUserName())) {
             user.setUserName(UserConstant.DEFAULT_USER_NAME);
+        }
+        if (user.getOutPaintingQuota() == null) {
+            user.setOutPaintingQuota(UserConstant.DEFAULT_OUT_PAINTING_QUOTA);
         }
         boolean result = this.save(user);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "添加用户失败");
@@ -228,6 +233,55 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public boolean isAdmin(User user) {
         return user != null && UserConstant.ADMIN_ROLE.equals(user.getUserRole());
+    }
+
+    @Override
+    public void deductOutPaintingQuota(User user) {
+        if (isAdmin(user)) {
+            return;
+        }
+        boolean deducted = this.lambdaUpdate()
+                .eq(User::getId, user.getId())
+                .gt(User::getOutPaintingQuota, 0)
+                .setSql("outPaintingQuota = outPaintingQuota - 1")
+                .update();
+        ThrowUtils.throwIf(!deducted, ErrorCode.OPERATION_ERROR, "扩图次数不足，次数已用尽，请联系管理员");
+    }
+
+    @Override
+    public void refundOutPaintingQuota(Long userId) {
+        if (userId == null) {
+            return;
+        }
+        User user = this.getById(userId);
+        if (user == null || isAdmin(user)) {
+            return;
+        }
+        this.lambdaUpdate()
+                .eq(User::getId, userId)
+                .setSql("outPaintingQuota = outPaintingQuota + 1")
+                .update();
+    }
+
+    @Override
+    public OutPaintingQuotaVO getOutPaintingQuotaVO(User user) {
+        OutPaintingQuotaVO quotaVO = new OutPaintingQuotaVO();
+        if (user == null) {
+            quotaVO.setRemaining(0);
+            quotaVO.setUnlimited(false);
+            return quotaVO;
+        }
+        if (isAdmin(user)) {
+            quotaVO.setUnlimited(true);
+            quotaVO.setRemaining(null);
+            return quotaVO;
+        }
+        User dbUser = this.getById(user.getId());
+        int remaining = dbUser != null && dbUser.getOutPaintingQuota() != null
+                ? dbUser.getOutPaintingQuota() : 0;
+        quotaVO.setUnlimited(false);
+        quotaVO.setRemaining(remaining);
+        return quotaVO;
     }
 }
 

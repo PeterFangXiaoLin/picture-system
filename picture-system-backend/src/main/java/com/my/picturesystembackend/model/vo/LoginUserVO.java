@@ -51,6 +51,12 @@ public class LoginUserVO implements Serializable {
     private String userRole;
 
     /**
+     * AI 扩图剩余次数
+     */
+    @ApiModelProperty(value = "AI 扩图剩余次数")
+    private Integer outPaintingQuota;
+
+    /**
      * 创建时间
      */
     @ApiModelProperty(value = "创建时间")

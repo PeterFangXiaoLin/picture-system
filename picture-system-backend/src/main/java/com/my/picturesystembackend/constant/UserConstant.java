@@ -47,6 +47,11 @@ public interface UserConstant {
     String DEFAULT_USER_NAME = "无名";
 
     /**
+     * 默认 AI 扩图次数
+     */
+    Integer DEFAULT_OUT_PAINTING_QUOTA = 8;
+
+    /**
      * 默认密码
      */
     String DEFAULT_USER_PASSWORD = "12345678";

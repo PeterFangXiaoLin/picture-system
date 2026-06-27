@@ -459,7 +459,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Long spaceId = pictureQueryRequest.getSpaceId();
         if (spaceId == null) {
             // 补充只查出审核通过的图片
-            pictureQueryRequest.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
+//            pictureQueryRequest.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
             pictureQueryRequest.setNullSpaceId(true);
         } else {
             // 私有空间

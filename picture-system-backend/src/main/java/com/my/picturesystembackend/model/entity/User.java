@@ -69,6 +69,13 @@ public class User implements Serializable {
     private String userRole;
 
     /**
+     * AI 扩图剩余次数
+     */
+    @TableField(value = "outPaintingQuota")
+    @ApiModelProperty(value = "AI 扩图剩余次数")
+    private Integer outPaintingQuota;
+
+    /**
      * 编辑时间
      */
     @TableField(value = "editTime")

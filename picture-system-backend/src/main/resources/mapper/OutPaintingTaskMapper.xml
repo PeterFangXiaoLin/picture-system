@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.my.picturesystembackend.mapper.OutPaintingTaskMapper">
+
+    <resultMap id="BaseResultMap" type="com.my.picturesystembackend.model.entity.OutPaintingTask">
+        <id property="id" column="id"/>
+        <result property="taskId" column="taskId"/>
+        <result property="pictureId" column="pictureId"/>
+        <result property="userId" column="userId"/>
+        <result property="taskStatus" column="taskStatus"/>
+        <result property="parameters" column="parameters"/>
+        <result property="originalImageUrl" column="originalImageUrl"/>
+        <result property="outputImageUrl" column="outputImageUrl"/>
+        <result property="errorCode" column="errorCode"/>
+        <result property="errorMessage" column="errorMessage"/>
+        <result property="parentTaskId" column="parentTaskId"/>
+        <result property="quotaRefunded" column="quotaRefunded"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+        <result property="isDelete" column="isDelete"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,taskId,pictureId,userId,taskStatus,parameters,originalImageUrl,outputImageUrl,
+        errorCode,errorMessage,parentTaskId,quotaRefunded,createTime,updateTime,isDelete
+    </sql>
+</mapper>
