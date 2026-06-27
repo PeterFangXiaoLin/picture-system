@@ -41,6 +41,12 @@
                       我的空间
                     </router-link>
                   </a-menu-item>
+                  <a-menu-item>
+                    <router-link to="/out_painting/task">
+                      <HistoryOutlined />
+                      扩图任务
+                    </router-link>
+                  </a-menu-item>
                   <a-menu-divider />
                   <a-menu-item key="logout">
                     <LogoutOutlined />
@@ -62,7 +68,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { UserOutlined, LogoutOutlined } from '@ant-design/icons-vue'
+import { UserOutlined, LogoutOutlined, HistoryOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import routes from '@/router/routes.ts'
 import checkAccess from '@/access/checkAccess.ts'

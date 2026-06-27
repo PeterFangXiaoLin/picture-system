@@ -4,7 +4,7 @@
       {{ route.query?.id ? '修改图片' : '创建图片' }}
     </h2>
     <a-typography-paragraph v-if="spaceId" type="secondary">
-      保存至空间：<a :href="`/space/${spaceId}`" target="_blank">{{spaceId}}</a>
+      保存至空间：<a :href="`/space/${spaceId}`" target="_blank">{{ spaceId }}</a>
     </a-typography-paragraph>
 
     <div class="upload-section">
@@ -19,6 +19,31 @@
       </a-tabs>
     </div>
 
+    <!-- 图片编辑 -->
+    <div v-if="picture" class="edit-bar">
+      <a-space size="middle">
+        <a-button :icon="h(EditOutlined)" @click="doEditPicture">编辑图片</a-button>
+        <a-button type="primary" :icon="h(FullscreenOutlined)" @click="doImagePainting">
+          AI 扩图
+        </a-button>
+      </a-space>
+
+      <ImageCropper
+        ref="imageCropperRef"
+        :imageUrl="picture?.url"
+        :picture="picture"
+        :spaceId="spaceId"
+        :onSuccess="onCropSuccess"
+      />
+      <ImageOutPainting
+        ref="imageOutPaintingRef"
+        :picture="picture"
+        :spaceId="spaceId"
+        :onSuccess="onImageOutPaintingSuccess"
+      />
+    </div>
+
+    <!-- 图片信息表单-->
     <a-form
       v-if="picture"
       layout="vertical"
@@ -56,7 +81,9 @@
           size="large"
           class="rounded-lg"
           show-search
-          :filter-option="(input, option) => option.label.toLowerCase().includes(input.toLowerCase())"
+          :filter-option="
+            (input, option) => option.label.toLowerCase().includes(input.toLowerCase())
+          "
         />
       </a-form-item>
 
@@ -82,7 +109,7 @@
           :loading="submitting"
           class="submit-button"
         >
-          <template v-if="!submitting">{{route.query?.id ? '创建图片' : '更新图片'}}</template>
+          <template v-if="!submitting">{{ route.query?.id ? '更新图片' : '创建图片' }}</template>
           <template v-else>创建中...</template>
         </a-button>
       </a-form-item>
@@ -91,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import PictureUpload from '@/components/PictureUpload.vue'
@@ -99,6 +126,9 @@ import { editPictureUsingPost, getPictureVoByIdUsingGet } from '@/api/pictureCon
 import { listCategoryVoUsingPost } from '@/api/categoryController'
 import { listTagVoUsingPost } from '@/api/tagController'
 import UrlPictureUpload from '@/components/UrlPictureUpload.vue'
+import { EditOutlined, FullscreenOutlined } from '@ant-design/icons-vue'
+import ImageCropper from '@/components/ImageCropper.vue'
+import ImageOutPainting from '@/components/ImageOutPainting.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -191,6 +221,31 @@ const getOldPicture = async () => {
 onMounted(() => {
   getOldPicture()
 })
+
+// ----- 图片编辑器引用 ------
+const imageCropperRef = ref()
+
+// 编辑图片
+const doEditPicture = async () => {
+  imageCropperRef.value?.openModal()
+}
+
+// 编辑成功事件
+const onCropSuccess = (newPicture: API.PictureVO) => {
+  picture.value = newPicture
+}
+
+// --- AI 扩图引用 ----
+const imageOutPaintingRef = ref()
+
+const doImagePainting = () => {
+  imageOutPaintingRef.value?.openModal()
+}
+
+ // AI扩图编辑成功事件
+const onImageOutPaintingSuccess = (newPicture: API.PictureVO) => {
+  picture.value = newPicture
+}
 </script>
 
 <style scoped>
@@ -318,4 +373,10 @@ onMounted(() => {
     margin-bottom: 24px;
   }
 }
+
+#addPicturePage .edit-bar {
+  text-align: center;
+  margin: 16px 0;
+}
+
 </style>

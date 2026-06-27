@@ -1,6 +1,6 @@
 import HomePage from '@/pages/HomePage.vue'
 import { h } from 'vue'
-import { HomeOutlined, UploadOutlined } from '@ant-design/icons-vue'
+import { HomeOutlined, UploadOutlined, HistoryOutlined } from '@ant-design/icons-vue'
 import UserLoginPage from '@/pages/user/UserLoginPage.vue'
 import UserRegisterPage from '@/pages/user/UserRegisterPage.vue'
 import UserManagePage from '@/pages/admin/UserManagePage.vue'
@@ -78,6 +78,23 @@ const routes = [
     meta: {
       authCheck: ACCESS_ENUM.ADMIN,
     }
+  },
+  {
+    path: '/out_painting/task',
+    name: '扩图任务',
+    component: () => import('@/pages/OutPaintingTaskPage.vue'),
+    meta: {
+      authCheck: ACCESS_ENUM.USER,
+      icon: () => h(HistoryOutlined),
+    },
+  },
+  {
+    path: '/admin/outPaintingTaskManage',
+    name: '扩图任务管理',
+    component: () => import('@/pages/admin/OutPaintingTaskManagePage.vue'),
+    meta: {
+      authCheck: ACCESS_ENUM.ADMIN,
+    },
   },
   {
     path: '/picture/:id',

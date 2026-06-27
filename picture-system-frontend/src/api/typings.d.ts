@@ -17,6 +17,12 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseGetOutPaintingTaskResponse_ = {
+    code?: number
+    data?: GetOutPaintingTaskResponse
+    message?: string
+  }
+
   type BaseResponseInt_ = {
     code?: number
     data?: number
@@ -65,6 +71,18 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseOutPaintingTaskStatisticsVO_ = {
+    code?: number
+    data?: OutPaintingTaskStatisticsVO
+    message?: string
+  }
+
+  type BaseResponseOutPaintingTaskVO_ = {
+    code?: number
+    data?: OutPaintingTaskVO
+    message?: string
+  }
+
   type BaseResponsePageCategory_ = {
     code?: number
     data?: PageCategory_
@@ -74,6 +92,12 @@ declare namespace API {
   type BaseResponsePageCategoryVO_ = {
     code?: number
     data?: PageCategoryVO_
+    message?: string
+  }
+
+  type BaseResponsePageOutPaintingTaskVO_ = {
+    code?: number
+    data?: PageOutPaintingTaskVO_
     message?: string
   }
 
@@ -225,6 +249,11 @@ declare namespace API {
     userVO?: UserVO
   }
 
+  type CreatePictureOutPaintingTaskRequest = {
+    parameters?: Parameters
+    pictureId?: string
+  }
+
   type deletePictureUsingPOSTParams = {
     /** id */
     id?: string
@@ -250,9 +279,24 @@ declare namespace API {
     id?: string
   }
 
+  type getOutPaintingTaskByIdUsingGETParams = {
+    /** id */
+    id?: string
+  }
+
+  type GetOutPaintingTaskResponse = {
+    output?: Output
+    requestId?: string
+  }
+
   type getPictureAdminVOByIdUsingGETParams = {
     /** id */
     id?: string
+  }
+
+  type getPictureOutPaintingTaskUsingGETParams = {
+    /** taskId */
+    taskId?: string
   }
 
   type getPictureVOByIdUsingGETParams = {
@@ -302,6 +346,103 @@ declare namespace API {
     userProfile?: string
     /** 用户角色 */
     userRole?: string
+    /** AI 扩图剩余次数 */
+    outPaintingQuota?: number
+  }
+
+  type OutPaintingQuotaVO = {
+    /** 剩余次数 */
+    remaining?: number
+    /** 是否不限次数（管理员） */
+    unlimited?: boolean
+  }
+
+  type BaseResponseOutPaintingQuotaVO_ = {
+    code?: number
+    data?: OutPaintingQuotaVO
+    message?: string
+  }
+
+  type OutPaintingTaskQueryRequest = {
+    /** 当前页号 */
+    current?: number
+    /** 结束创建时间 */
+    endCreateTime?: string
+    /** 任务记录 id */
+    id?: string
+    /** 页面大小 */
+    pageSize?: number
+    /** 原图片 id */
+    pictureId?: string
+    /** 排序字段 */
+    sortField?: string
+    /** 排序顺序（默认降序） */
+    sortOrder?: string
+    /** 开始创建时间 */
+    startCreateTime?: string
+    /** 阿里云任务 id */
+    taskId?: string
+    /** 任务状态 */
+    taskStatus?: string
+    /** 用户 id */
+    userId?: string
+  }
+
+  type OutPaintingTaskStatisticsVO = {
+    /** 失败任务数 */
+    failedCount?: number
+    /** 失败率（百分比，保留两位小数） */
+    failureRate?: number
+    /** 处理中任务数 */
+    processingCount?: number
+    /** 成功任务数 */
+    successCount?: number
+    /** 成功率（百分比，保留两位小数） */
+    successRate?: number
+    /** 任务总数 */
+    totalCount?: number
+  }
+
+  type OutPaintingTaskVO = {
+    /** 创建时间 */
+    createTime?: string
+    /** 错误码 */
+    errorCode?: string
+    /** 错误信息 */
+    errorMessage?: string
+    /** 任务记录 id */
+    id?: string
+    /** 原图 url */
+    originalImageUrl?: string
+    /** 输出图像 url */
+    outputImageUrl?: string
+    parameters?: Parameters
+    /** 重试时关联的原任务记录 id */
+    parentTaskId?: string
+    /** 原图片 id */
+    pictureId?: string
+    /** 原图片名称 */
+    pictureName?: string
+    /** 阿里云任务 id */
+    taskId?: string
+    /** 任务状态 */
+    taskStatus?: string
+    /** 更新时间 */
+    updateTime?: string
+    /** 创建用户 id */
+    userId?: string
+  }
+
+  type Output = {
+    code?: string
+    endTime?: string
+    message?: string
+    outputImageUrl?: string
+    scheduledTime?: string
+    submitTime?: string
+    taskId?: string
+    taskMetrics?: TaskMetrics
+    taskStatus?: string
   }
 
   type PageCategory_ = {
@@ -316,6 +457,14 @@ declare namespace API {
     current?: number
     pages?: number
     records?: CategoryVO[]
+    size?: number
+    total?: number
+  }
+
+  type PageOutPaintingTaskVO_ = {
+    current?: number
+    pages?: number
+    records?: OutPaintingTaskVO[]
     size?: number
     total?: number
   }
@@ -374,6 +523,20 @@ declare namespace API {
     records?: UserVO[]
     size?: number
     total?: number
+  }
+
+  type Parameters = {
+    addWatermark?: boolean
+    angle?: number
+    bestQuality?: boolean
+    bottomOffset?: number
+    leftOffset?: number
+    limitImageSize?: boolean
+    outputRatio?: string
+    rightOffset?: number
+    topOffset?: number
+    xScale?: number
+    yScale?: number
   }
 
   type PictureAdminVO = {
@@ -586,6 +749,11 @@ declare namespace API {
     userId?: string
   }
 
+  type RetryOutPaintingTaskRequest = {
+    /** 任务记录 id */
+    id: string
+  }
+
   type SearchPictureByColorRequest = {
     /** 图片主色调 */
     picColor?: string
@@ -750,6 +918,12 @@ declare namespace API {
     userVO?: UserVO
   }
 
+  type TaskMetrics = {
+    failed?: number
+    succeeded?: number
+    total?: number
+  }
+
   type testDownloadFileUsingGETParams = {
     /** filePath */
     filePath?: string
@@ -863,6 +1037,8 @@ declare namespace API {
     userProfile?: string
     /** 用户角色：user/admin */
     userRole?: string
+    /** AI 扩图剩余次数 */
+    outPaintingQuota?: number
   }
 
   type UserVO = {
@@ -880,5 +1056,7 @@ declare namespace API {
     userProfile?: string
     /** 用户角色：user/admin */
     userRole?: string
+    /** AI 扩图剩余次数 */
+    outPaintingQuota?: number
   }
 }

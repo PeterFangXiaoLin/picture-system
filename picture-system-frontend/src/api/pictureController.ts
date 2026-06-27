@@ -122,6 +122,124 @@ export async function listPictureVoByPageWithCacheUsingPost(
   })
 }
 
+/** 创建 AI 扩图任务 POST /api/picture/out_painting/create_task */
+export async function createPictureOutPaintingTaskUsingPost(
+  body: API.CreatePictureOutPaintingTaskRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseOutPaintingTaskVO_>('/api/picture/out_painting/create_task', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** 查询 AI 扩图任务 GET /api/picture/out_painting/get_task */
+export async function getPictureOutPaintingTaskUsingGet(
+  // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
+  params: API.getPictureOutPaintingTaskUsingGETParams,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseGetOutPaintingTaskResponse_>(
+    '/api/picture/out_painting/get_task',
+    {
+      method: 'GET',
+      params: {
+        ...params,
+      },
+      ...(options || {}),
+    }
+  )
+}
+
+/** 根据 id 查询 AI 扩图任务记录 GET /api/picture/out_painting/task/get */
+export async function getOutPaintingTaskByIdUsingGet(
+  // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
+  params: API.getOutPaintingTaskByIdUsingGETParams,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseOutPaintingTaskVO_>('/api/picture/out_painting/task/get', {
+    method: 'GET',
+    params: {
+      ...params,
+    },
+    ...(options || {}),
+  })
+}
+
+/** 分页查询当前用户的 AI 扩图任务 POST /api/picture/out_painting/task/list/page */
+export async function listOutPaintingTaskByPageUsingPost(
+  body: API.OutPaintingTaskQueryRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponsePageOutPaintingTaskVO_>(
+    '/api/picture/out_painting/task/list/page',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: body,
+      ...(options || {}),
+    }
+  )
+}
+
+/** 分页查询所有 AI 扩图任务（管理员） POST /api/picture/out_painting/task/list/page/admin */
+export async function listOutPaintingTaskByPageAdminUsingPost(
+  body: API.OutPaintingTaskQueryRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponsePageOutPaintingTaskVO_>(
+    '/api/picture/out_painting/task/list/page/admin',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: body,
+      ...(options || {}),
+    }
+  )
+}
+
+/** 重试 AI 扩图任务 POST /api/picture/out_painting/task/retry */
+export async function retryOutPaintingTaskUsingPost(
+  body: API.RetryOutPaintingTaskRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseOutPaintingTaskVO_>('/api/picture/out_painting/task/retry', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** 获取 AI 扩图任务统计（管理员） GET /api/picture/out_painting/task/statistics */
+export async function getOutPaintingTaskStatisticsUsingGet(options?: { [key: string]: any }) {
+  return request<API.BaseResponseOutPaintingTaskStatisticsVO_>(
+    '/api/picture/out_painting/task/statistics',
+    {
+      method: 'GET',
+      ...(options || {}),
+    }
+  )
+}
+
+/** 获取当前用户 AI 扩图剩余次数 GET /api/picture/out_painting/quota */
+export async function getOutPaintingQuotaUsingGet(options?: { [key: string]: any }) {
+  return request<API.BaseResponseOutPaintingQuotaVO_>('/api/picture/out_painting/quota', {
+    method: 'GET',
+    ...(options || {}),
+  })
+}
+
 /** 图片审核 图片审核 POST /api/picture/review */
 export async function doPictureReviewUsingPost(
   body: API.PictureReviewRequest,

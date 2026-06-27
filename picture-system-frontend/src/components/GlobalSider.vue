@@ -19,9 +19,9 @@
 
 <script setup lang="ts">
 // 菜单列表
-import { useRouter } from 'vue-router'
-import { UserOutlined, PictureOutlined } from '@ant-design/icons-vue'
-import { h, ref } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { UserOutlined, PictureOutlined, HistoryOutlined } from '@ant-design/icons-vue'
+import { h, ref, watch } from 'vue'
 import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'
 
 const loginUserStore = useLoginUserStore()
@@ -37,16 +37,38 @@ const menuItems = [
     label: '我的空间',
     icon: () => h(UserOutlined),
   },
+  {
+    key: '/out_painting/task',
+    label: '扩图任务',
+    icon: () => h(HistoryOutlined),
+  },
 ]
 
 const router = useRouter()
+const route = useRoute()
+
+/** 将实际路由映射到侧边栏菜单 key */
+const getActiveMenuKey = (path: string) => {
+  if (path.startsWith('/space/') || path === '/add_space') {
+    return '/my_space'
+  }
+  if (path.startsWith('/out_painting')) {
+    return '/out_painting/task'
+  }
+  const matched = menuItems.find((item) => item.key === path)
+  return matched ? matched.key : path
+}
 
 // 当前选中菜单
-const current = ref<string[]>([])
-// 监听路由变化，更新当前选中菜单
-router.afterEach((to, from, failure) => {
-  current.value = [to.path]
-})
+const current = ref<string[]>([getActiveMenuKey(route.path)])
+
+watch(
+  () => route.path,
+  (path) => {
+    current.value = [getActiveMenuKey(path)]
+  },
+  { immediate: true },
+)
 
 // 路由跳转事件
 const doMenuClick = ({ key }: { key: string }) => {

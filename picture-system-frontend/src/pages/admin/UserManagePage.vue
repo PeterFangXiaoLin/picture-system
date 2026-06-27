@@ -150,6 +150,15 @@
             <a-select-option value="admin">管理员</a-select-option>
           </a-select>
         </a-form-item>
+        <a-form-item label="扩图次数" name="outPaintingQuota">
+          <a-input-number
+            v-model:value="formData.outPaintingQuota"
+            :min="0"
+            :step="1"
+            style="width: 100%"
+            placeholder="请输入 AI 扩图剩余次数"
+          />
+        </a-form-item>
       </a-form>
     </a-modal>
   </div>
@@ -191,6 +200,7 @@ const formData = reactive<API.UserAddRequest & API.UserUpdateRequest>({
   userAvatar: '',
   userProfile: '',
   userRole: 'user',
+  outPaintingQuota: 8,
 })
 
 // 表单验证规则
@@ -239,6 +249,13 @@ const columns = [
   {
     title: '用户角色',
     key: 'userRole',
+    width: 100,
+    align: 'center',
+  },
+  {
+    title: '扩图次数',
+    dataIndex: 'outPaintingQuota',
+    key: 'outPaintingQuota',
     width: 100,
     align: 'center',
   },
@@ -327,6 +344,7 @@ const showEditModal = (record: API.UserVO) => {
     userAvatar: record.userAvatar,
     userProfile: record.userProfile,
     userRole: record.userRole,
+    outPaintingQuota: record.outPaintingQuota ?? 8,
   })
 }
 
@@ -339,6 +357,7 @@ const resetForm = () => {
     userAvatar: '',
     userProfile: '',
     userRole: 'user',
+    outPaintingQuota: 8,
   })
   formRef.value?.resetFields()
 }
@@ -358,6 +377,7 @@ const handleModalOk = async () => {
         userAvatar: formData.userAvatar,
         userProfile: formData.userProfile,
         userRole: formData.userRole,
+        outPaintingQuota: formData.outPaintingQuota,
       })
     } else {
       // 新增用户
