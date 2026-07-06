@@ -11,10 +11,13 @@ import com.my.picturesystembackend.api.aliyunai.AliYunAiApi;
 import com.my.picturesystembackend.api.aliyunai.model.CreateOutPaintingTaskRequest;
 import com.my.picturesystembackend.api.aliyunai.model.CreateOutPaintingTaskResponse;
 import com.my.picturesystembackend.api.aliyunai.model.GetOutPaintingTaskResponse;
+import com.my.picturesystembackend.config.CosClientConfig;
 import com.my.picturesystembackend.constant.CommonConstant;
 import com.my.picturesystembackend.exception.BusinessException;
 import com.my.picturesystembackend.exception.ErrorCode;
 import com.my.picturesystembackend.exception.ThrowUtils;
+import com.my.picturesystembackend.manager.upload.UrlPictureUpload;
+import com.my.picturesystembackend.model.dto.file.UploadPictureResult;
 import com.my.picturesystembackend.mapper.OutPaintingTaskMapper;
 import com.my.picturesystembackend.model.dto.outpainting.OutPaintingTaskQueryRequest;
 import com.my.picturesystembackend.model.dto.outpainting.RetryOutPaintingTaskRequest;
@@ -53,6 +56,8 @@ public class OutPaintingTaskServiceImpl extends ServiceImpl<OutPaintingTaskMappe
     private final AliYunAiApi aliYunAiApi;
     private final PictureService pictureService;
     private final UserService userService;
+    private final UrlPictureUpload urlPictureUpload;
+    private final CosClientConfig cosClientConfig;
 
     @Override
     public OutPaintingTaskVO createOutPaintingTask(CreatePictureOutPaintingTaskRequest request, User loginUser) {
@@ -129,7 +134,10 @@ public class OutPaintingTaskServiceImpl extends ServiceImpl<OutPaintingTaskMappe
         }
         GetOutPaintingTaskResponse response = aliYunAiApi.getOutPaintingTask(taskId);
         if (task != null) {
-            syncTaskFromRemoteResponse(task, response);
+            String persistentOutputImageUrl = syncTaskFromRemoteResponse(task, response);
+            if (StrUtil.isNotBlank(persistentOutputImageUrl) && response.getOutput() != null) {
+                response.getOutput().setOutputImageUrl(persistentOutputImageUrl);
+            }
         }
         return response;
     }
@@ -140,7 +148,7 @@ public class OutPaintingTaskServiceImpl extends ServiceImpl<OutPaintingTaskMappe
         OutPaintingTask task = Optional.ofNullable(this.getById(id))
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_ERROR, "任务记录不存在"));
         checkTaskPermission(loginUser, task);
-        if (syncRemote && !OutPaintingTaskStatusEnum.isFinished(task.getTaskStatus())) {
+        if (syncRemote && shouldSyncRemoteTask(task)) {
             GetOutPaintingTaskResponse response = aliYunAiApi.getOutPaintingTask(task.getTaskId());
             syncTaskFromRemoteResponse(task, response);
             task = this.getById(id);
@@ -241,20 +249,22 @@ public class OutPaintingTaskServiceImpl extends ServiceImpl<OutPaintingTaskMappe
         return taskRequest;
     }
 
-    private void syncTaskFromRemoteResponse(OutPaintingTask task, GetOutPaintingTaskResponse response) {
+    private String syncTaskFromRemoteResponse(OutPaintingTask task, GetOutPaintingTaskResponse response) {
         if (response == null || response.getOutput() == null) {
-            return;
+            return null;
         }
         GetOutPaintingTaskResponse.Output output = response.getOutput();
         String oldStatus = task.getTaskStatus();
         String newStatus = output.getTaskStatus();
+        String persistentOutputImageUrl = null;
         OutPaintingTask updateTask = new OutPaintingTask();
         updateTask.setId(task.getId());
         if (StrUtil.isNotBlank(newStatus)) {
             updateTask.setTaskStatus(newStatus);
         }
         if (StrUtil.isNotBlank(output.getOutputImageUrl())) {
-            updateTask.setOutputImageUrl(output.getOutputImageUrl());
+            persistentOutputImageUrl = saveOutputImageToCos(task, output.getOutputImageUrl());
+            updateTask.setOutputImageUrl(persistentOutputImageUrl);
         }
         if (StrUtil.isNotBlank(output.getCode())) {
             updateTask.setErrorCode(output.getCode());
@@ -274,6 +284,41 @@ public class OutPaintingTaskServiceImpl extends ServiceImpl<OutPaintingTaskMappe
                     .set(OutPaintingTask::getQuotaRefunded, 1)
                     .update();
         }
+        return persistentOutputImageUrl;
+    }
+
+    private String saveOutputImageToCos(OutPaintingTask task, String temporaryImageUrl) {
+        String currentOutputImageUrl = task.getOutputImageUrl();
+        if (isCosImageUrl(currentOutputImageUrl)) {
+            return currentOutputImageUrl;
+        }
+
+        String uploadPathPrefix = String.format("out-painting/%s/%s", task.getUserId(), task.getTaskId());
+        try {
+            UploadPictureResult uploadPictureResult = urlPictureUpload.uploadPicture(temporaryImageUrl, uploadPathPrefix);
+            return uploadPictureResult.getUrl();
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("扩图结果转存 COS 失败, taskId={}, imageUrl={}", task.getTaskId(), temporaryImageUrl, e);
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "扩图结果保存失败，请稍后重试");
+        }
+    }
+
+    private boolean isCosImageUrl(String imageUrl) {
+        if (StrUtil.isBlank(imageUrl) || StrUtil.isBlank(cosClientConfig.getHost())) {
+            return false;
+        }
+        String cosHost = StrUtil.removeSuffix(cosClientConfig.getHost().trim(), "/");
+        return imageUrl.startsWith(cosHost + "/");
+    }
+
+    private boolean shouldSyncRemoteTask(OutPaintingTask task) {
+        if (!OutPaintingTaskStatusEnum.isFinished(task.getTaskStatus())) {
+            return true;
+        }
+        return OutPaintingTaskStatusEnum.SUCCEEDED.getValue().equals(task.getTaskStatus())
+                && !isCosImageUrl(task.getOutputImageUrl());
     }
 
     private OutPaintingTaskVO getOutPaintingTaskVO(OutPaintingTask task, String pictureName) {
