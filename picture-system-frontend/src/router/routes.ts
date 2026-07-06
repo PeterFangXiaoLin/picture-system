@@ -127,6 +127,14 @@ const routes = [
     }
   },
   {
+    path: '/space_analyze',
+    name: '空间分析',
+    component: () => import('@/pages/SpaceAnalyzePage.vue'),
+    meta: {
+      show: false
+    }
+  },
+  {
     path: '/space/:id',
     name: '空间详情',
     component: () => import('@/pages/SpaceDetailPage.vue'),

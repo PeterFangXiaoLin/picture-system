@@ -47,9 +47,39 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseListSpace_ = {
+    code?: number
+    data?: Space[]
+    message?: string
+  }
+
+  type BaseResponseListSpaceCategoryAnalyzeResponse_ = {
+    code?: number
+    data?: SpaceCategoryAnalyzeResponse[]
+    message?: string
+  }
+
   type BaseResponseListSpaceLevel_ = {
     code?: number
     data?: SpaceLevel[]
+    message?: string
+  }
+
+  type BaseResponseListSpaceSizeAnalyzeResponse_ = {
+    code?: number
+    data?: SpaceSizeAnalyzeResponse[]
+    message?: string
+  }
+
+  type BaseResponseListSpaceTagAnalyzeResponse_ = {
+    code?: number
+    data?: SpaceTagAnalyzeResponse[]
+    message?: string
+  }
+
+  type BaseResponseListSpaceUserAnalyzeResponse_ = {
+    code?: number
+    data?: SpaceUserAnalyzeResponse[]
     message?: string
   }
 
@@ -68,6 +98,12 @@ declare namespace API {
   type BaseResponseLong_ = {
     code?: number
     data?: number
+    message?: string
+  }
+
+  type BaseResponseOutPaintingQuotaVO_ = {
+    code?: number
+    data?: OutPaintingQuotaVO
     message?: string
   }
 
@@ -158,6 +194,12 @@ declare namespace API {
   type BaseResponseSpace_ = {
     code?: number
     data?: Space
+    message?: string
+  }
+
+  type BaseResponseSpaceUsageAnalyzeResponse_ = {
+    code?: number
+    data?: SpaceUsageAnalyzeResponse
     message?: string
   }
 
@@ -334,6 +376,8 @@ declare namespace API {
     createTime?: string
     /** id */
     id?: string
+    /** AI 扩图剩余次数 */
+    outPaintingQuota?: number
     /** 更新时间 */
     updateTime?: string
     /** 账号 */
@@ -346,8 +390,6 @@ declare namespace API {
     userProfile?: string
     /** 用户角色 */
     userRole?: string
-    /** AI 扩图剩余次数 */
-    outPaintingQuota?: number
   }
 
   type OutPaintingQuotaVO = {
@@ -355,12 +397,6 @@ declare namespace API {
     remaining?: number
     /** 是否不限次数（管理员） */
     unlimited?: boolean
-  }
-
-  type BaseResponseOutPaintingQuotaVO_ = {
-    code?: number
-    data?: OutPaintingQuotaVO
-    message?: string
   }
 
   type OutPaintingTaskQueryRequest = {
@@ -788,6 +824,26 @@ declare namespace API {
     spaceName?: string
   }
 
+  type SpaceCategoryAnalyzeRequest = {
+    /** 全空间分析 */
+    queryAll?: boolean
+    /** 是否查询公共图库 */
+    queryPublic?: boolean
+    /** 空间 ID */
+    spaceId?: string
+  }
+
+  type SpaceCategoryAnalyzeResponse = {
+    /** 图片分类 */
+    categoryId?: string
+    /** 图片分类名称 */
+    categoryName?: string
+    /** 图片数量 */
+    count?: number
+    /** 分类图片总大小 */
+    totalSize?: number
+  }
+
   type SpaceEditRequest = {
     /** 空间 id */
     id?: string
@@ -825,6 +881,45 @@ declare namespace API {
     userId?: string
   }
 
+  type SpaceRankAnalyzeRequest = {
+    /** 排名前 N 的空间 */
+    topN?: number
+  }
+
+  type SpaceSizeAnalyzeRequest = {
+    /** 全空间分析 */
+    queryAll?: boolean
+    /** 是否查询公共图库 */
+    queryPublic?: boolean
+    /** 空间 ID */
+    spaceId?: string
+  }
+
+  type SpaceSizeAnalyzeResponse = {
+    /** 图片数量 */
+    count?: number
+    /** 图片大小范围 */
+    sizeRange?: string
+  }
+
+  type SpaceTagAnalyzeRequest = {
+    /** 全空间分析 */
+    queryAll?: boolean
+    /** 是否查询公共图库 */
+    queryPublic?: boolean
+    /** 空间 ID */
+    spaceId?: string
+  }
+
+  type SpaceTagAnalyzeResponse = {
+    /** 使用次数 */
+    count?: number
+    /** 标签id */
+    tagId?: string
+    /** 标签名称 */
+    tagName?: string
+  }
+
   type SpaceUpdateRequest = {
     /** id */
     id?: string
@@ -836,6 +931,50 @@ declare namespace API {
     spaceLevel?: number
     /** 空间名称 */
     spaceName?: string
+  }
+
+  type SpaceUsageAnalyzeRequest = {
+    /** 全空间分析 */
+    queryAll?: boolean
+    /** 是否查询公共图库 */
+    queryPublic?: boolean
+    /** 空间 ID */
+    spaceId?: string
+  }
+
+  type SpaceUsageAnalyzeResponse = {
+    /** 图片数量占比 */
+    countUsageRatio?: number
+    /** 最大图片数量 */
+    maxCount?: number
+    /** 总大小 */
+    maxSize?: number
+    /** 空间使用比例 */
+    sizeUsageRatio?: number
+    /** 当前图片数量 */
+    usedCount?: number
+    /** 已使用大小 */
+    usedSize?: number
+  }
+
+  type SpaceUserAnalyzeRequest = {
+    /** 全空间分析 */
+    queryAll?: boolean
+    /** 是否查询公共图库 */
+    queryPublic?: boolean
+    /** 空间 ID */
+    spaceId?: string
+    /** 时间维度 */
+    timeDimension?: string
+    /** 用户id */
+    userId?: string
+  }
+
+  type SpaceUserAnalyzeResponse = {
+    /** 上传数量 */
+    count?: number
+    /** 时间区间 */
+    period?: string
   }
 
   type SpaceVO = {
@@ -960,6 +1099,8 @@ declare namespace API {
     id?: string
     /** 是否删除 */
     isDelete?: number
+    /** AI 扩图剩余次数 */
+    outPaintingQuota?: number
     /** 更新时间 */
     updateTime?: string
     /** 账号 */
@@ -1029,6 +1170,8 @@ declare namespace API {
   type UserUpdateRequest = {
     /** id */
     id?: string
+    /** AI 扩图剩余次数 */
+    outPaintingQuota?: number
     /** 用户头像 */
     userAvatar?: string
     /** 用户昵称 */
@@ -1037,8 +1180,6 @@ declare namespace API {
     userProfile?: string
     /** 用户角色：user/admin */
     userRole?: string
-    /** AI 扩图剩余次数 */
-    outPaintingQuota?: number
   }
 
   type UserVO = {
@@ -1046,6 +1187,8 @@ declare namespace API {
     createTime?: string
     /** id */
     id?: string
+    /** AI 扩图剩余次数 */
+    outPaintingQuota?: number
     /** 账号 */
     userAccount?: string
     /** 用户头像 */
@@ -1056,7 +1199,5 @@ declare namespace API {
     userProfile?: string
     /** 用户角色：user/admin */
     userRole?: string
-    /** AI 扩图剩余次数 */
-    outPaintingQuota?: number
   }
 }

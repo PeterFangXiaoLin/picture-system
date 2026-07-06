@@ -155,6 +155,14 @@ export async function getPictureOutPaintingTaskUsingGet(
   )
 }
 
+/** 获取当前用户 AI 扩图剩余次数 GET /api/picture/out_painting/quota */
+export async function getOutPaintingQuotaUsingGet(options?: { [key: string]: any }) {
+  return request<API.BaseResponseOutPaintingQuotaVO_>('/api/picture/out_painting/quota', {
+    method: 'GET',
+    ...(options || {}),
+  })
+}
+
 /** 根据 id 查询 AI 扩图任务记录 GET /api/picture/out_painting/task/get */
 export async function getOutPaintingTaskByIdUsingGet(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
@@ -230,14 +238,6 @@ export async function getOutPaintingTaskStatisticsUsingGet(options?: { [key: str
       ...(options || {}),
     }
   )
-}
-
-/** 获取当前用户 AI 扩图剩余次数 GET /api/picture/out_painting/quota */
-export async function getOutPaintingQuotaUsingGet(options?: { [key: string]: any }) {
-  return request<API.BaseResponseOutPaintingQuotaVO_>('/api/picture/out_painting/quota', {
-    method: 'GET',
-    ...(options || {}),
-  })
 }
 
 /** 图片审核 图片审核 POST /api/picture/review */
