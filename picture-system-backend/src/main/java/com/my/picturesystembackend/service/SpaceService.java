@@ -9,6 +9,7 @@ import com.my.picturesystembackend.model.dto.space.SpaceEditRequest;
 import com.my.picturesystembackend.model.dto.space.SpaceQueryRequest;
 import com.my.picturesystembackend.model.dto.space.SpaceUpdateRequest;
 import com.my.picturesystembackend.model.entity.Space;
+import com.my.picturesystembackend.model.entity.User;
 import com.my.picturesystembackend.model.vo.SpaceVO;
 
 import javax.servlet.http.HttpServletRequest;
@@ -89,4 +90,12 @@ public interface SpaceService extends IService<Space> {
      * @return 是否编辑成功
      */
     Boolean editSpace(SpaceEditRequest spaceEditRequest, HttpServletRequest request);
+
+    /**
+     * 校验空间权限
+     *
+     * @param loginUser 登录用户
+     * @param space     空间
+     */
+    void checkSpaceAuth(User loginUser, Space space);
 }

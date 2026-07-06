@@ -255,9 +255,8 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         Space oldSpace = this.getById(id);
         ThrowUtils.throwIf(oldSpace == null, ErrorCode.NOT_FOUND_ERROR);
         // 仅管理员或创建者可删除
-        if (!userService.isAdmin(loginUser) && !oldSpace.getUserId().equals(loginUser.getId())) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
+        checkSpaceAuth(loginUser, oldSpace);
+
         // 删除空间，同时删除空间中的图片，以及异步清空对象存储中的图片
         List<Picture> pictureList = new ArrayList<>();
         transactionTemplate.execute(status -> {
@@ -268,7 +267,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
                 List<Long> pictureIdList = pictureList.stream()
                         .map(Picture::getId)
                         .collect(Collectors.toList());
-                int deleteCount = pictureMapper.deleteBatchIds(pictureIdList);
+                int deleteCount = pictureMapper.deleteByIds(pictureIdList);
                 ThrowUtils.throwIf(deleteCount != pictureIdList.size(), ErrorCode.OPERATION_ERROR, "删除空间图片失败");
             }
             boolean result = this.removeById(id);
@@ -290,9 +289,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         Space oldSpace = this.getById(id);
         ThrowUtils.throwIf(oldSpace == null, ErrorCode.NOT_FOUND_ERROR);
         // 仅创建者或管理员可编辑
-        if (!userService.isAdmin(loginUser) && !oldSpace.getUserId().equals(loginUser.getId())) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
+        checkSpaceAuth(loginUser, oldSpace);
         // 编辑空间
         Space space = new Space();
         BeanUtil.copyProperties(spaceEditRequest, space);
@@ -305,6 +302,14 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
             throw new BusinessException(ErrorCode.OPERATION_ERROR);
         }
         return true;
+    }
+
+    @Override
+    public void checkSpaceAuth(User loginUser, Space space) {
+        // 仅管理员或创建者可删除
+        if (!userService.isAdmin(loginUser) && !space.getUserId().equals(loginUser.getId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+        }
     }
 }
 
