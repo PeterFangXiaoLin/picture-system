@@ -182,7 +182,7 @@ const doDelete = async (id: string) => {
   if (res.data.code === 0) {
     message.success('删除成功')
     // 重新获取数据
-    fetchaData()
+    await fetchData()
   } else {
     message.error('删除失败')
   }
