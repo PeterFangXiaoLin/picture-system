@@ -37,5 +37,17 @@ public class SpaceUserQueryRequest implements Serializable {
     @ApiModelProperty(value = "空间角色：viewer/editor/admin")
     private String spaceRole;
 
+    /**
+     * 邀请确认状态：0-待确认；1-已接受；2-已拒绝
+     */
+    @ApiModelProperty(value = "邀请确认状态：0-待确认；1-已接受；2-已拒绝")
+    private Integer inviteStatus;
+
+    /**
+     * 邀请人 id
+     */
+    @ApiModelProperty(value = "邀请人 id")
+    private Long createUserId;
+
     private static final long serialVersionUID = 9015929366455466611L;
 }

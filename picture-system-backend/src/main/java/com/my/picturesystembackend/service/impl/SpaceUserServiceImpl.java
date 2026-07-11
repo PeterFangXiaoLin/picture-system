@@ -13,6 +13,7 @@ import com.my.picturesystembackend.model.entity.Space;
 import com.my.picturesystembackend.model.entity.SpaceUser;
 import com.my.picturesystembackend.model.entity.User;
 import com.my.picturesystembackend.model.enums.SpaceRoleEnum;
+import com.my.picturesystembackend.model.enums.SpaceUserInviteStatusEnum;
 import com.my.picturesystembackend.model.vo.SpaceUserVO;
 import com.my.picturesystembackend.model.vo.SpaceVO;
 import com.my.picturesystembackend.model.vo.UserVO;
@@ -51,24 +52,75 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
     private final UserService userService;
 
     @Override
-    public Long addSpaceUser(SpaceUserAddRequest spaceUserAddRequest) {
+    public Long addSpaceUser(SpaceUserAddRequest spaceUserAddRequest, User loginUser) {
         ThrowUtils.throwIf(spaceUserAddRequest == null, ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(loginUser == null || loginUser.getId() == null, ErrorCode.NO_AUTH_ERROR);
         SpaceUser spaceUser = new SpaceUser();
         BeanUtils.copyProperties(spaceUserAddRequest, spaceUser);
         validSpaceUser(spaceUser, true);
-        // 查询数据库是否存在记录
-        boolean exists = this.lambdaQuery()
+
+        // 只有已加入空间的管理员才可以发出邀请
+        boolean isSpaceAdmin = this.lambdaQuery()
+                .eq(SpaceUser::getSpaceId, spaceUser.getSpaceId())
+                .eq(SpaceUser::getUserId, loginUser.getId())
+                .eq(SpaceUser::getSpaceRole, SpaceRoleEnum.ADMIN.getValue())
+                .eq(SpaceUser::getInviteStatus, SpaceUserInviteStatusEnum.ACCEPTED.getValue())
+                .exists();
+        ThrowUtils.throwIf(!isSpaceAdmin, ErrorCode.NO_AUTH_ERROR, "仅空间管理员可邀请成员");
+
+        spaceUser.setCreateUserId(loginUser.getId());
+        spaceUser.setInviteStatus(SpaceUserInviteStatusEnum.PENDING.getValue());
+
+        // 同一个用户拒绝后允许管理员再次邀请；待确认或已接受时禁止重复邀请
+        SpaceUser existingSpaceUser = this.lambdaQuery()
                 .eq(SpaceUser::getSpaceId, spaceUser.getSpaceId())
                 .eq(SpaceUser::getUserId, spaceUser.getUserId())
-                .exists();
-        if (exists) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "用户已在空间中");
+                .one();
+        if (existingSpaceUser != null) {
+            if (!Integer.valueOf(SpaceUserInviteStatusEnum.REJECTED.getValue())
+                    .equals(existingSpaceUser.getInviteStatus())) {
+                String message = Integer.valueOf(SpaceUserInviteStatusEnum.PENDING.getValue())
+                        .equals(existingSpaceUser.getInviteStatus())
+                        ? "邀请待用户确认，请勿重复邀请" : "用户已在空间中";
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, message);
+            }
+            spaceUser.setId(existingSpaceUser.getId());
+            boolean result = this.updateById(spaceUser);
+            ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+            return spaceUser.getId();
         }
 
-        // 操作数据库
         boolean result = this.save(spaceUser);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return spaceUser.getId();
+    }
+
+    @Override
+    public boolean reviewSpaceUserInvite(Long id, Integer inviteStatus, User loginUser) {
+        ThrowUtils.throwIf(id == null || id <= 0 || loginUser == null || loginUser.getId() == null,
+                ErrorCode.PARAMS_ERROR);
+        SpaceUserInviteStatusEnum statusEnum = SpaceUserInviteStatusEnum.getEnumByValue(inviteStatus);
+        ThrowUtils.throwIf(statusEnum != SpaceUserInviteStatusEnum.ACCEPTED
+                        && statusEnum != SpaceUserInviteStatusEnum.REJECTED,
+                ErrorCode.PARAMS_ERROR, "只能接受或拒绝邀请");
+
+        SpaceUser invitation = this.getById(id);
+        ThrowUtils.throwIf(invitation == null, ErrorCode.NOT_FOUND_ERROR, "邀请不存在");
+        ThrowUtils.throwIf(!loginUser.getId().equals(invitation.getUserId()),
+                ErrorCode.NO_AUTH_ERROR, "只能处理发送给自己的邀请");
+        ThrowUtils.throwIf(!Integer.valueOf(SpaceUserInviteStatusEnum.PENDING.getValue())
+                        .equals(invitation.getInviteStatus()),
+                ErrorCode.OPERATION_ERROR, "邀请已处理");
+
+        // 带上旧状态作为更新条件，避免并发请求重复处理邀请
+        boolean result = this.lambdaUpdate()
+                .eq(SpaceUser::getId, id)
+                .eq(SpaceUser::getUserId, loginUser.getId())
+                .eq(SpaceUser::getInviteStatus, SpaceUserInviteStatusEnum.PENDING.getValue())
+                .set(SpaceUser::getInviteStatus, inviteStatus)
+                .update();
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "邀请已处理");
+        return true;
     }
 
     @Override
@@ -102,10 +154,14 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
         Long spaceId = spaceUserQueryRequest.getSpaceId();
         Long userId = spaceUserQueryRequest.getUserId();
         String spaceRole = spaceUserQueryRequest.getSpaceRole();
+        Integer inviteStatus = spaceUserQueryRequest.getInviteStatus();
+        Long createUserId = spaceUserQueryRequest.getCreateUserId();
         queryWrapper.eq(ObjUtil.isNotNull(id), "id", id);
         queryWrapper.eq(ObjUtil.isNotNull(spaceId), "spaceId", spaceId);
         queryWrapper.eq(ObjUtil.isNotNull(userId), "userId", userId);
         queryWrapper.eq(StrUtil.isNotBlank(spaceRole), "spaceRole", spaceRole);
+        queryWrapper.eq(ObjUtil.isNotNull(inviteStatus), "inviteStatus", inviteStatus);
+        queryWrapper.eq(ObjUtil.isNotNull(createUserId), "createUserId", createUserId);
         return queryWrapper;
     }
 

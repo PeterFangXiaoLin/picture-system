@@ -9,9 +9,11 @@ import com.my.picturesystembackend.exception.ErrorCode;
 import com.my.picturesystembackend.exception.ThrowUtils;
 import com.my.picturesystembackend.model.dto.spaceuser.SpaceUserAddRequest;
 import com.my.picturesystembackend.model.dto.spaceuser.SpaceUserEditRequest;
+import com.my.picturesystembackend.model.dto.spaceuser.SpaceUserInviteReviewRequest;
 import com.my.picturesystembackend.model.dto.spaceuser.SpaceUserQueryRequest;
 import com.my.picturesystembackend.model.entity.SpaceUser;
 import com.my.picturesystembackend.model.entity.User;
+import com.my.picturesystembackend.model.enums.SpaceUserInviteStatusEnum;
 import com.my.picturesystembackend.model.vo.SpaceUserVO;
 import com.my.picturesystembackend.service.SpaceUserService;
 import com.my.picturesystembackend.service.UserService;
@@ -46,7 +48,43 @@ public class SpaceUserController {
     @ApiOperation(value = "添加成员到空间")
     public BaseResponse<Long> addSpaceUser(@RequestBody SpaceUserAddRequest spaceUserAddRequest,
                                            HttpServletRequest request) {
-        return ResultUtils.success(spaceUserService.addSpaceUser(spaceUserAddRequest));
+        User loginUser = userService.getLoginUser(request);
+        return ResultUtils.success(spaceUserService.addSpaceUser(spaceUserAddRequest, loginUser));
+    }
+
+    /**
+     * 受邀用户接受或拒绝空间邀请。
+     *
+     * @param reviewRequest 邀请处理请求
+     * @param request request
+     * @return 处理结果
+     */
+    @PostMapping("/invite/review")
+    @ApiOperation(value = "接受或拒绝空间邀请")
+    public BaseResponse<Boolean> reviewSpaceUserInvite(
+            @RequestBody SpaceUserInviteReviewRequest reviewRequest,
+            HttpServletRequest request) {
+        ThrowUtils.throwIf(reviewRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        return ResultUtils.success(spaceUserService.reviewSpaceUserInvite(
+                reviewRequest.getId(), reviewRequest.getInviteStatus(), loginUser));
+    }
+
+    /**
+     * 查询当前用户待确认的空间邀请。
+     *
+     * @param request request
+     * @return 待确认邀请列表
+     */
+    @PostMapping("/invite/list/my")
+    @ApiOperation(value = "查询我的待确认空间邀请")
+    public BaseResponse<List<SpaceUserVO>> listMyPendingInvite(HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        List<SpaceUser> invitationList = spaceUserService.lambdaQuery()
+                .eq(SpaceUser::getUserId, loginUser.getId())
+                .eq(SpaceUser::getInviteStatus, SpaceUserInviteStatusEnum.PENDING.getValue())
+                .list();
+        return ResultUtils.success(spaceUserService.getSpaceUserVOList(invitationList));
     }
 
     /**
@@ -156,6 +194,7 @@ public class SpaceUserController {
         User loginUser = userService.getLoginUser(request);
         List<SpaceUser> spaceUserList = spaceUserService.lambdaQuery()
                 .eq(SpaceUser::getUserId, loginUser.getId())
+                .eq(SpaceUser::getInviteStatus, SpaceUserInviteStatusEnum.ACCEPTED.getValue())
                 .list();
         return ResultUtils.success(spaceUserService.getSpaceUserVOList(spaceUserList));
     }

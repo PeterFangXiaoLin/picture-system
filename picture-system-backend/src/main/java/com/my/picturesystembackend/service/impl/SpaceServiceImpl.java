@@ -22,6 +22,7 @@ import com.my.picturesystembackend.model.entity.SpaceUser;
 import com.my.picturesystembackend.model.entity.User;
 import com.my.picturesystembackend.model.enums.SpaceLevelEnum;
 import com.my.picturesystembackend.model.enums.SpaceRoleEnum;
+import com.my.picturesystembackend.model.enums.SpaceUserInviteStatusEnum;
 import com.my.picturesystembackend.model.enums.SpaceTypeEnum;
 import com.my.picturesystembackend.model.vo.SpaceVO;
 import com.my.picturesystembackend.model.vo.UserVO;
@@ -170,6 +171,8 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
                         spaceUser.setSpaceId(space.getId());
                         spaceUser.setUserId(loginUser.getId());
                         spaceUser.setSpaceRole(SpaceRoleEnum.ADMIN.getValue());
+                        spaceUser.setInviteStatus(SpaceUserInviteStatusEnum.ACCEPTED.getValue());
+                        spaceUser.setCreateUserId(loginUser.getId());
                         result = spaceUserService.save(spaceUser);
                         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "创建团队成员记录失败");
                     }

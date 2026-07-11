@@ -41,6 +41,18 @@ public class SpaceUserVO implements Serializable {
     private String spaceRole;
 
     /**
+     * 邀请确认状态：0-待确认；1-已接受；2-已拒绝
+     */
+    @ApiModelProperty(value = "邀请确认状态：0-待确认；1-已接受；2-已拒绝")
+    private Integer inviteStatus;
+
+    /**
+     * 邀请人 id
+     */
+    @ApiModelProperty(value = "邀请人 id")
+    private Long createUserId;
+
+    /**
      * 创建时间
      */
     @ApiModelProperty(value = "创建时间")

@@ -41,6 +41,18 @@ public class SpaceUser implements Serializable {
     private String spaceRole;
 
     /**
+     * 邀请确认状态：0-待确认；1-已接受；2-已拒绝
+     */
+    @TableField(value = "inviteStatus")
+    private Integer inviteStatus;
+
+    /**
+     * 邀请人 id
+     */
+    @TableField(value = "createUserId")
+    private Long createUserId;
+
+    /**
      * 创建时间
      */
     @TableField(value = "createTime")

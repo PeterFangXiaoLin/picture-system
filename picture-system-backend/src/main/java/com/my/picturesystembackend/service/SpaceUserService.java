@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.my.picturesystembackend.model.dto.spaceuser.SpaceUserAddRequest;
 import com.my.picturesystembackend.model.dto.spaceuser.SpaceUserQueryRequest;
 import com.my.picturesystembackend.model.entity.SpaceUser;
+import com.my.picturesystembackend.model.entity.User;
 import com.my.picturesystembackend.model.vo.SpaceUserVO;
 
 import javax.servlet.http.HttpServletRequest;
@@ -21,9 +22,20 @@ public interface SpaceUserService extends IService<SpaceUser> {
      * 添加空间成员
      *
      * @param spaceUserAddRequest 添加空间成员请求
-     * @return 添加成功id
+     * @param loginUser 当前登录的邀请人
+     * @return 邀请记录 id
      */
-    Long addSpaceUser(SpaceUserAddRequest spaceUserAddRequest);
+    Long addSpaceUser(SpaceUserAddRequest spaceUserAddRequest, User loginUser);
+
+    /**
+     * 接受或拒绝空间邀请。
+     *
+     * @param id 空间成员记录 id
+     * @param inviteStatus 邀请确认状态：1-接受；2-拒绝
+     * @param loginUser 当前登录的受邀用户
+     * @return 是否处理成功
+     */
+    boolean reviewSpaceUserInvite(Long id, Integer inviteStatus, User loginUser);
 
     /**
      * 校验参数
