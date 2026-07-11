@@ -31,6 +31,12 @@ public class SpaceVO implements Serializable {
     private Integer spaceLevel;
 
     /**
+     * 空间类型：0-私有空间，1-团队空间
+     */
+    @ApiModelProperty(value = "空间类型：0-私有空间，1-团队空间")
+    private Integer spaceType;
+
+    /**
      * 空间图片的最大总大小
      */
     @ApiModelProperty(value = "空间图片的最大总大小")
