@@ -2,6 +2,7 @@ package com.my.picturesystembackend.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import com.my.picturesystembackend.config.CosClientConfig;
 import com.my.picturesystembackend.constant.PictureConstant;
 import com.my.picturesystembackend.manager.CosManager;
 import com.my.picturesystembackend.model.entity.Picture;
@@ -22,6 +23,8 @@ public class AsyncServiceImpl implements AsyncService {
     private final StringRedisTemplate stringRedisTemplate;
 
     private final CosManager cosManager;
+
+    private final CosClientConfig cosClientConfig;
 
     @Override
     @Async
@@ -50,18 +53,27 @@ public class AsyncServiceImpl implements AsyncService {
     @Override
     @Async
     public void clearPictureFile(Picture oldPicture) {
-        String url = oldPicture.getUrl();
-        String key = url.replaceFirst("^[^/]+/", "");
+        if (oldPicture == null) {
+            return;
+        }
+        deleteManagedObject(oldPicture.getUrl(), "picture");
+        deleteManagedObject(oldPicture.getCompressedUrl(), "compressed picture");
+    }
 
-        if (StrUtil.isNotBlank(url)) {
-            cosManager.deleteObject(key);
-            log.info("Deleted picture file: {}", key);
+    /**
+     * 只删除当前 COS 域名下的对象，避免把外链错误转换为桶内 key。
+     */
+    private void deleteManagedObject(String url, String objectType) {
+        if (StrUtil.isBlank(url)) {
+            return;
         }
-        String compressedUrl = oldPicture.getCompressedUrl();
-        String compressedKey = compressedUrl.replaceFirst("^[^/]+/", "");
-        if (StrUtil.isNotBlank(compressedUrl)) {
-            cosManager.deleteObject(compressedKey);
-            log.info("Deleted compressed picture file: {}", compressedKey);
+        String host = StrUtil.removeSuffix(cosClientConfig.getHost(), "/");
+        if (StrUtil.isBlank(host) || !url.startsWith(host + "/")) {
+            log.debug("Skipped deleting external {} URL: {}", objectType, url);
+            return;
         }
+        String key = url.substring(host.length());
+        cosManager.deleteObject(key);
+        log.info("Deleted {} file: {}", objectType, key);
     }
 }

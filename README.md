@@ -231,5 +231,153 @@
 
 
 
+#### 邀请用户加入空间和审批
+
+新增邀请状态：`0-待确认 / 1-已接受 / 2-已拒绝`
+
+新增邀请人字段 `createUserId`
+
+仅已接受邀请的空间管理员可以邀请成员
+
+受邀用户只能审批自己的邀请
+
+拒绝后支持管理员重新邀请
+
+使用条件更新避免并发重复审批
+
+“我的团队空间”仅返回已接受的空间
+
+新增接口：
+
+- `POST /spaceUser/invite/list/my`：查询待确认邀请
+- `POST /spaceUser/invite/review`：接受或拒绝邀请
+
+团队空间创建者自动设置为已接受的管理员
+
+
+
+### 空间权限控制
+
 RBAC 权限控制，上面提到的接口是需要权限的，定义不同的角色，不同的角色拥有不同的权限
 
+引入 `sa-token` 进行鉴权
+
+为了减少代码的修改，原本对 user 表的鉴权保持不变，继续使用，使用 `sa-token` 鉴权空间成员权限。利用多账号认证特征，将多套账号的认证区分开，让他们互不干扰。
+
+使用https://sa-token.cc/doc.html#/up/many-account 多账号认证实现
+
+
+
+引入 多账号登录认证时，我们要在登录时，在这套账号体系下也要登录，修改 登录service 的实现逻辑，补充这段内容。
+
+
+
+接着就是鉴权，我们如何知道一个用户是否有权限呢，两种方式：获取该用户所具有的角色，或者直接获取该用户的权限列表。通过这两个中的一个，我们就可以进行判断。
+
+
+
+根据文档：https://sa-token.cc/doc.html#/use/jur-auth
+
+我们需要编写一个类：获取当前账号权限码
+
+```java
+/**
+ * 自定义权限加载接口实现类
+ */
+@Component    // 保证此类被 SpringBoot 扫描，完成 Sa-Token 的自定义权限验证扩展 
+public class StpInterfaceImpl implements StpInterface {
+
+    /**
+     * 返回一个账号所拥有的权限码集合 
+     */
+    @Override
+    public List<String> getPermissionList(Object loginId, String loginType) {
+        // 本 list 仅做模拟，实际项目中要根据具体业务逻辑来查询权限
+        List<String> list = new ArrayList<String>();    
+        list.add("101");
+        list.add("user.add");
+        list.add("user.update");
+        list.add("user.get");
+        // list.add("user.delete");
+        list.add("art.*");
+        return list;
+    }
+
+    /**
+     * 返回一个账号所拥有的角色标识集合 (权限与角色可分开校验)
+     */
+    @Override
+    public List<String> getRoleList(Object loginId, String loginType) {
+        // 本 list 仅做模拟，实际项目中要根据具体业务逻辑来查询角色
+        List<String> list = new ArrayList<String>();    
+        list.add("admin");
+        list.add("super-admin");
+        return list;
+    }
+
+}
+
+```
+
+
+
+我们要给空间图片和空间成员的操作进行鉴权，但是观察方法，我们只能拿到登录的用户id和 loginType， 不知道用户具体是操作哪个位置的数据，也不知道请求的是哪个接口，不知道参数的具体dto类型。
+
+需要定义一个通用的**上下文类** 用于接收请求参数，因为dto中含有id，但是不清除具体是哪种类型的id，需要获取请求的url，这样才能知道id所代表的业务类型。
+
+因为 request 流只能读取一次，这样controller 里面的内容就读不到参数了，所以需要一个过滤器，让流可重复读取。
+
+
+
+#### 为什么有 `spaceUserId` 时要查询两次 `space_user`
+
+先区分两个容易混淆的概念：
+
+- `spaceUserId`：请求中携带的 `space_user.id`，表示**被操作的成员关系**。例如管理员编辑或删除某个成员时，这个 ID 属于目标成员。
+- `userId`：从 Sa-Token 登录会话中取得的用户 ID，表示**发起请求的当前登录用户（操作者）**。
+
+例如，用户 A 是团队空间 100 的管理员，要把用户 B 修改为编辑者：
+
+```text
+当前登录用户：A（userId = 1）
+请求参数 id：20（spaceUserId = 20，对应用户 B 在空间 100 的成员记录）
+```
+
+鉴权过程如下：
+
+```text
+spaceUserId = 20
+    │
+    ├─ 第一次查询：按 space_user.id 查目标成员 B
+    │              目的：得到本次操作所属的 spaceId = 100
+    │
+    └─ 第二次查询：按 userId = 1、spaceId = 100 查操作者 A
+                   目的：得到 A 在空间 100 中的角色，再映射为权限列表
+```
+
+因此两次查询不是在查询同一个人：第一次查询的是**操作目标**，第二次查询的是**操作主体**。权限必须取自当前操作者的成员记录。
+
+不能直接使用第一次查询得到的角色。否则，系统判断的会是“被操作成员拥有什么权限”，而不是“当前登录用户能不能操作他”。例如普通成员去编辑一个管理员的记录时，若直接使用目标管理员的角色，反而会错误地获得管理员权限，造成越权。
+
+当前实现还需要满足以下约束：
+
+1. 第二次查询只认可 `inviteStatus = 1`（已接受）的成员。待确认或已拒绝邀请的用户不能获得空间权限。
+2. 数据库通过唯一索引 `uk_spaceId_userId (spaceId, userId)` 保证一个用户在同一空间最多只有一条成员记录，所以这里可以使用 `one()`。
+3. 查不到目标成员时返回“未找到空间用户信息”；查不到操作者的已接受成员记录时返回空权限列表，由 Sa-Token 拒绝本次操作。
+4. 角色只能信任数据库查询结果，不能直接使用请求体反序列化出的 `spaceUser.spaceRole`。请求数据由客户端控制，如果客户端伪造 `spaceRole = admin` 而服务端直接据此生成权限，会造成越权。
+
+只有当接口明确保证 `spaceUserId` 永远是当前登录用户自己的成员记录，并且已校验记录中的 `userId` 等于登录用户 ID 时，才可能复用第一次查询结果。当前的成员编辑、删除等接口操作的是其他成员，不能这样省略第二次查询。
+
+
+
+#### 自定义注解完成鉴权
+
+https://sa-token.cc/doc.html#/up/many-account
+
+5，6，7
+
+修改鉴权使用自定义注解，删除代码中的检验
+
+#### 全局异常处理器增加异常类型拦截
+
+查看图片详情额外返回权限列表，方便前端展示相关按钮

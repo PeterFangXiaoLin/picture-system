@@ -118,6 +118,12 @@ public class PictureVO implements Serializable {
     private Long spaceId;
 
     /**
+     * 权限列表
+     */
+    @ApiModelProperty(value = "权限列表")
+    private List<String> permissionList;
+
+    /**
      * 图片主色调
      */
     @ApiModelProperty(value = "图片主色调")

@@ -8,6 +8,7 @@ import org.springframework.beans.BeanUtils;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @ApiModel(value = "SpaceVO", description = "空间")
@@ -65,6 +66,12 @@ public class SpaceVO implements Serializable {
      */
     @ApiModelProperty(value = "创建用户 id")
     private Long userId;
+
+    /**
+     * 权限列表
+     */
+    @ApiModelProperty(value = "权限列表")
+    private List<String> permissionList;
 
     /**
      * 创建时间

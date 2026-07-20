@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.my.picturesystembackend.common.DeleteRequest;
 import com.my.picturesystembackend.model.dto.picture.*;
 import com.my.picturesystembackend.model.entity.Picture;
+import com.my.picturesystembackend.model.entity.Space;
 import com.my.picturesystembackend.model.entity.User;
 import com.my.picturesystembackend.model.vo.PictureAdminVO;
 import com.my.picturesystembackend.model.vo.PictureVO;
@@ -81,6 +82,16 @@ public interface PictureService extends IService<Picture> {
      * @return pictureVO
      */
     PictureVO getPictureVO(Picture picture, User loginUser);
+
+    /**
+     * 获取封装的 PictureVO
+     *
+     * @param picture picture
+     * @param loginUser loginUser
+     * @param space space
+     * @return pictureVO
+     */
+    PictureVO getPictureVO(Picture picture, User loginUser, Space space);
 
     /**
      * pictureQueryRequest TO QueryWrapper

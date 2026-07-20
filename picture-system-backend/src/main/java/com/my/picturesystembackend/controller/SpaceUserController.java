@@ -7,14 +7,19 @@ import com.my.picturesystembackend.common.ResultUtils;
 import com.my.picturesystembackend.exception.BusinessException;
 import com.my.picturesystembackend.exception.ErrorCode;
 import com.my.picturesystembackend.exception.ThrowUtils;
+import com.my.picturesystembackend.manager.auth.annotation.SaSpaceCheckPermission;
+import com.my.picturesystembackend.manager.auth.model.SpaceUserPermissionConstant;
 import com.my.picturesystembackend.model.dto.spaceuser.SpaceUserAddRequest;
 import com.my.picturesystembackend.model.dto.spaceuser.SpaceUserEditRequest;
 import com.my.picturesystembackend.model.dto.spaceuser.SpaceUserInviteReviewRequest;
 import com.my.picturesystembackend.model.dto.spaceuser.SpaceUserQueryRequest;
+import com.my.picturesystembackend.model.entity.Space;
 import com.my.picturesystembackend.model.entity.SpaceUser;
 import com.my.picturesystembackend.model.entity.User;
+import com.my.picturesystembackend.model.enums.SpaceTypeEnum;
 import com.my.picturesystembackend.model.enums.SpaceUserInviteStatusEnum;
 import com.my.picturesystembackend.model.vo.SpaceUserVO;
+import com.my.picturesystembackend.service.SpaceService;
 import com.my.picturesystembackend.service.SpaceUserService;
 import com.my.picturesystembackend.service.UserService;
 import io.swagger.annotations.ApiOperation;
@@ -35,6 +40,7 @@ import java.util.Objects;
 public class SpaceUserController {
 
     private final SpaceUserService spaceUserService;
+    private final SpaceService spaceService;
     private final UserService userService;
 
     /**
@@ -46,6 +52,7 @@ public class SpaceUserController {
      */
     @PostMapping("/add")
     @ApiOperation(value = "添加成员到空间")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<Long> addSpaceUser(@RequestBody SpaceUserAddRequest spaceUserAddRequest,
                                            HttpServletRequest request) {
         User loginUser = userService.getLoginUser(request);
@@ -96,6 +103,7 @@ public class SpaceUserController {
      */
     @PostMapping("/delete")
     @ApiOperation(value = "删除空间成员")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<Boolean> deleteSpaceUser(@RequestBody DeleteRequest deleteRequest,
                                                  HttpServletRequest request) {
         if (deleteRequest == null || deleteRequest.getId() == null || deleteRequest.getId() <= 0) {
@@ -104,6 +112,10 @@ public class SpaceUserController {
         Long id = deleteRequest.getId();
         SpaceUser oldSpaceUser = spaceUserService.getById(id);
         ThrowUtils.throwIf(oldSpaceUser == null, ErrorCode.NOT_FOUND_ERROR, "用户不是空间成员");
+        Space space = spaceService.getById(oldSpaceUser.getSpaceId());
+        ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
+        ThrowUtils.throwIf(space.getSpaceType() != SpaceTypeEnum.TEAM.getValue(),
+                ErrorCode.NO_AUTH_ERROR, "私有空间不能移除成员");
         boolean result = spaceUserService.removeById(id);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(true);
@@ -117,6 +129,7 @@ public class SpaceUserController {
      */
     @PostMapping("/get")
     @ApiOperation(value = "查询某个成员在某个空间的信息")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<SpaceUser> getSpaceUser(@RequestBody SpaceUserQueryRequest spaceUserQueryRequest) {
         ThrowUtils.throwIf(spaceUserQueryRequest == null, ErrorCode.PARAMS_ERROR);
         Long userId = spaceUserQueryRequest.getUserId();
@@ -140,6 +153,7 @@ public class SpaceUserController {
      */
     @PostMapping("/list")
     @ApiOperation(value = "查询成员信息列表")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<List<SpaceUserVO>> listSpaceUser(@RequestBody SpaceUserQueryRequest spaceUserQueryRequest,
                                                          HttpServletRequest request) {
         ThrowUtils.throwIf(spaceUserQueryRequest == null, ErrorCode.PARAMS_ERROR);
@@ -158,6 +172,7 @@ public class SpaceUserController {
      */
     @PostMapping("/edit")
     @ApiOperation(value = "编辑成员信息（设置权限）")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<Boolean> editSpaceUser(@RequestBody SpaceUserEditRequest spaceUserEditRequest,
                                                HttpServletRequest request) {
         if (spaceUserEditRequest == null || spaceUserEditRequest.getId() == null

@@ -10,6 +10,7 @@ import com.my.picturesystembackend.common.DeleteRequest;
 import com.my.picturesystembackend.exception.BusinessException;
 import com.my.picturesystembackend.exception.ErrorCode;
 import com.my.picturesystembackend.exception.ThrowUtils;
+import com.my.picturesystembackend.manager.auth.SpaceUserAuthManager;
 import com.my.picturesystembackend.mapper.PictureMapper;
 import com.my.picturesystembackend.mapper.SpaceMapper;
 import com.my.picturesystembackend.model.dto.space.SpaceAddRequest;
@@ -31,6 +32,7 @@ import com.my.picturesystembackend.service.SpaceService;
 import com.my.picturesystembackend.service.SpaceUserService;
 import com.my.picturesystembackend.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
@@ -65,6 +67,10 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
 
     @Resource
     private SpaceUserService spaceUserService;
+
+    @Resource
+    @Lazy
+    private SpaceUserAuthManager spaceUserAuthManager;
 
     private static final Map<Long, Object> lockMap = new ConcurrentHashMap<>();
 
@@ -219,6 +225,10 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
             UserVO userVO = userService.getUserVO(user);
             spaceVO.setUser(userVO);
         }
+        // 增加权限查询
+        User loginUser = userService.getLoginUser(request);
+        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser);
+        spaceVO.setPermissionList(permissionList);
         return spaceVO;
     }
 
