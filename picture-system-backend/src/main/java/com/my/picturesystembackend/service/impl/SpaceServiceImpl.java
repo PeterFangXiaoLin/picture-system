@@ -23,8 +23,8 @@ import com.my.picturesystembackend.model.entity.SpaceUser;
 import com.my.picturesystembackend.model.entity.User;
 import com.my.picturesystembackend.model.enums.SpaceLevelEnum;
 import com.my.picturesystembackend.model.enums.SpaceRoleEnum;
-import com.my.picturesystembackend.model.enums.SpaceUserInviteStatusEnum;
 import com.my.picturesystembackend.model.enums.SpaceTypeEnum;
+import com.my.picturesystembackend.model.enums.SpaceUserInviteStatusEnum;
 import com.my.picturesystembackend.model.vo.SpaceVO;
 import com.my.picturesystembackend.model.vo.UserVO;
 import com.my.picturesystembackend.service.AsyncService;
@@ -39,11 +39,7 @@ import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -71,6 +67,11 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
     @Resource
     @Lazy
     private SpaceUserAuthManager spaceUserAuthManager;
+
+    // 暂不使用分库分表
+//    @Lazy
+//    @Resource
+//    private DynamicShardingManager dynamicShardingManager;
 
     private static final Map<Long, Object> lockMap = new ConcurrentHashMap<>();
 
@@ -182,6 +183,8 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
                         result = spaceUserService.save(spaceUser);
                         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "创建团队成员记录失败");
                     }
+                    // 创建分表
+//                    dynamicShardingManager.createSpacePictureTable(space);
 
                     return space.getId();
                 });
