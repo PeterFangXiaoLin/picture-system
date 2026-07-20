@@ -7,7 +7,8 @@ import com.my.picturesystembackend.common.ResultUtils;
 import com.my.picturesystembackend.exception.BusinessException;
 import com.my.picturesystembackend.exception.ErrorCode;
 import com.my.picturesystembackend.exception.ThrowUtils;
-import com.my.picturesystembackend.manager.auth.annotation.SaSpaceCheckPermission;
+import com.my.picturesystembackend.manager.auth.SpaceUserAuthContext;
+import com.my.picturesystembackend.manager.auth.SpaceUserAuthManager;
 import com.my.picturesystembackend.manager.auth.model.SpaceUserPermissionConstant;
 import com.my.picturesystembackend.model.dto.spaceuser.SpaceUserAddRequest;
 import com.my.picturesystembackend.model.dto.spaceuser.SpaceUserEditRequest;
@@ -42,6 +43,7 @@ public class SpaceUserController {
     private final SpaceUserService spaceUserService;
     private final SpaceService spaceService;
     private final UserService userService;
+    private final SpaceUserAuthManager spaceUserAuthManager;
 
     /**
      * 添加成员到空间
@@ -52,7 +54,6 @@ public class SpaceUserController {
      */
     @PostMapping("/add")
     @ApiOperation(value = "添加成员到空间")
-    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<Long> addSpaceUser(@RequestBody SpaceUserAddRequest spaceUserAddRequest,
                                            HttpServletRequest request) {
         User loginUser = userService.getLoginUser(request);
@@ -103,7 +104,6 @@ public class SpaceUserController {
      */
     @PostMapping("/delete")
     @ApiOperation(value = "删除空间成员")
-    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<Boolean> deleteSpaceUser(@RequestBody DeleteRequest deleteRequest,
                                                  HttpServletRequest request) {
         if (deleteRequest == null || deleteRequest.getId() == null || deleteRequest.getId() <= 0) {
@@ -116,6 +116,8 @@ public class SpaceUserController {
         ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
         ThrowUtils.throwIf(space.getSpaceType() != SpaceTypeEnum.TEAM.getValue(),
                 ErrorCode.NO_AUTH_ERROR, "私有空间不能移除成员");
+        spaceUserAuthManager.checkPermission(SpaceUserPermissionConstant.SPACE_USER_MANAGE,
+                SpaceUserAuthContext.ofSpaceUserAndSpace(oldSpaceUser, space));
         boolean result = spaceUserService.removeById(id);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(true);
@@ -129,7 +131,6 @@ public class SpaceUserController {
      */
     @PostMapping("/get")
     @ApiOperation(value = "查询某个成员在某个空间的信息")
-    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<SpaceUser> getSpaceUser(@RequestBody SpaceUserQueryRequest spaceUserQueryRequest) {
         ThrowUtils.throwIf(spaceUserQueryRequest == null, ErrorCode.PARAMS_ERROR);
         Long userId = spaceUserQueryRequest.getUserId();
@@ -141,6 +142,8 @@ public class SpaceUserController {
                 .eq(SpaceUser::getSpaceId, spaceId)
                 .one();
         ThrowUtils.throwIf(spaceUser == null, ErrorCode.NOT_FOUND_ERROR);
+        spaceUserAuthManager.checkPermission(SpaceUserPermissionConstant.SPACE_USER_MANAGE,
+                SpaceUserAuthContext.ofSpaceUser(spaceUser));
         return ResultUtils.success(spaceUser);
     }
 
@@ -153,10 +156,15 @@ public class SpaceUserController {
      */
     @PostMapping("/list")
     @ApiOperation(value = "查询成员信息列表")
-    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<List<SpaceUserVO>> listSpaceUser(@RequestBody SpaceUserQueryRequest spaceUserQueryRequest,
                                                          HttpServletRequest request) {
         ThrowUtils.throwIf(spaceUserQueryRequest == null, ErrorCode.PARAMS_ERROR);
+        Long spaceId = spaceUserQueryRequest.getSpaceId();
+        ThrowUtils.throwIf(spaceId == null, ErrorCode.PARAMS_ERROR, "空间 id 不能为空");
+        Space space = spaceService.getById(spaceId);
+        ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
+        spaceUserAuthManager.checkPermission(SpaceUserPermissionConstant.SPACE_USER_MANAGE,
+                SpaceUserAuthContext.ofSpace(space));
         List<SpaceUser> spaceUserList = spaceUserService.list(
                 spaceUserService.getQueryWrapper(spaceUserQueryRequest)
         );
@@ -172,7 +180,6 @@ public class SpaceUserController {
      */
     @PostMapping("/edit")
     @ApiOperation(value = "编辑成员信息（设置权限）")
-    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<Boolean> editSpaceUser(@RequestBody SpaceUserEditRequest spaceUserEditRequest,
                                                HttpServletRequest request) {
         if (spaceUserEditRequest == null || spaceUserEditRequest.getId() == null
@@ -183,6 +190,8 @@ public class SpaceUserController {
         Long id = spaceUserEditRequest.getId();
         SpaceUser oldSpaceUser = spaceUserService.getById(id);
         ThrowUtils.throwIf(oldSpaceUser == null, ErrorCode.NOT_FOUND_ERROR, "用户不是空间成员");
+        spaceUserAuthManager.checkPermission(SpaceUserPermissionConstant.SPACE_USER_MANAGE,
+                SpaceUserAuthContext.ofSpaceUser(oldSpaceUser));
         // 校验参数
         SpaceUser spaceUser = new SpaceUser();
         BeanUtils.copyProperties(spaceUserEditRequest, spaceUser);

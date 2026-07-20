@@ -13,8 +13,6 @@ import com.my.picturesystembackend.constant.UserConstant;
 import com.my.picturesystembackend.exception.BusinessException;
 import com.my.picturesystembackend.exception.ErrorCode;
 import com.my.picturesystembackend.exception.ThrowUtils;
-import com.my.picturesystembackend.manager.auth.annotation.SaSpaceCheckPermission;
-import com.my.picturesystembackend.manager.auth.model.SpaceUserPermissionConstant;
 import com.my.picturesystembackend.model.dto.outpainting.OutPaintingTaskQueryRequest;
 import com.my.picturesystembackend.model.dto.outpainting.RetryOutPaintingTaskRequest;
 import com.my.picturesystembackend.model.dto.picture.*;
@@ -58,7 +56,6 @@ public class PictureController {
     @PostMapping("/upload")
 //    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     @ApiOperation(value = "上传图片", notes = "上传图片")
-    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_UPLOAD)
     public BaseResponse<PictureVO> uploadPicture(
             @RequestPart("file")MultipartFile multipartFile,
             PictureUploadRequest pictureUploadRequest,
@@ -75,7 +72,6 @@ public class PictureController {
      */
     @PostMapping("/upload/url")
     @ApiOperation(value = "通过 url 上传图片", notes = "通过 url 上传图片")
-    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_UPLOAD)
     public BaseResponse<PictureVO> uploadPictureByUrl(@RequestBody PictureUploadRequest pictureUploadRequest,
                                                       HttpServletRequest request) {
         String fileUrl = pictureUploadRequest.getFileUrl();
@@ -91,7 +87,6 @@ public class PictureController {
      */
     @PostMapping("/delete")
     @ApiOperation(value = "删除图片", notes = "删除图片")
-    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_DELETE)
     public BaseResponse<Boolean> deletePicture(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
         return ResultUtils.success(pictureService.deletePicture(deleteRequest, request));
     }
@@ -184,7 +179,6 @@ public class PictureController {
      */
     @PostMapping("/edit")
     @ApiOperation(value = "编辑图片（给用户使用）", notes = "编辑图片")
-    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_EDIT)
     public BaseResponse<Boolean> editPicture(@RequestBody PictureEditRequest pictureEditRequest, HttpServletRequest request) {
         return ResultUtils.success(pictureService.editPicture(pictureEditRequest, request));
     }
@@ -247,7 +241,6 @@ public class PictureController {
      */
     @PostMapping("/search/color")
     @ApiOperation(value = "以颜色搜图", notes = "以颜色搜图")
-    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_VIEW)
     public BaseResponse<List<PictureVO>> searchPictureByColor(@RequestBody SearchPictureByColorRequest searchPictureByColorRequest, HttpServletRequest request) {
         ThrowUtils.throwIf(searchPictureByColorRequest == null, ErrorCode.PARAMS_ERROR);
         String picColor = searchPictureByColorRequest.getPicColor();
@@ -266,7 +259,6 @@ public class PictureController {
      */
     @PostMapping("/edit/batch")
     @ApiOperation(value = "批量修改图片")
-    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_EDIT)
     public BaseResponse<Boolean> editPictureByBatch(@RequestBody PictureEditByBatchRequest pictureEditByBatchRequest, HttpServletRequest request) {
         ThrowUtils.throwIf(pictureEditByBatchRequest == null, ErrorCode.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(request);
@@ -279,7 +271,6 @@ public class PictureController {
      */
     @PostMapping("/out_painting/create_task")
     @ApiOperation(value = "创建 AI 扩图任务")
-    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_EDIT)
     public BaseResponse<OutPaintingTaskVO> createPictureOutPaintingTask(
             @RequestBody CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest,
             HttpServletRequest request) {

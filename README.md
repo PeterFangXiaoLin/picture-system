@@ -321,11 +321,9 @@ public class StpInterfaceImpl implements StpInterface {
 
 
 
-我们要给空间图片和空间成员的操作进行鉴权，但是观察方法，我们只能拿到登录的用户id和 loginType， 不知道用户具体是操作哪个位置的数据，也不知道请求的是哪个接口，不知道参数的具体dto类型。
+我们要给空间图片和空间成员的操作进行鉴权，但是 `StpInterface#getPermissionList` 默认只能拿到登录用户 ID 和 `loginType`，不知道当前操作的是哪张图片、哪个空间或哪条成员关系。因此项目定义了统一的 `SpaceUserAuthContext`，用于在业务代码和 Sa-Token 权限加载器之间传递 `Picture`、`Space`、`SpaceUser` 等业务对象。
 
-需要定义一个通用的**上下文类** 用于接收请求参数，因为dto中含有id，但是不清除具体是哪种类型的id，需要获取请求的url，这样才能知道id所代表的业务类型。
-
-因为 request 流只能读取一次，这样controller 里面的内容就读不到参数了，所以需要一个过滤器，让流可重复读取。
+项目早期使用注解式鉴权：拦截器在 Controller 方法执行前读取 URL 和请求参数，再根据参数中的 ID 查询业务对象。由于真正的业务方法随后还会查询同一个对象，这会造成重复查库；JSON 请求还需要使用 `RequestWrapper` 缓存请求体，产生额外的内存和处理开销。因此当前实现已改为基于 ThreadLocal 上下文的编程式鉴权。
 
 
 
@@ -370,13 +368,150 @@ spaceUserId = 20
 
 
 
-#### 自定义注解完成鉴权
+#### 从注解式鉴权改为编程式鉴权
 
-https://sa-token.cc/doc.html#/up/many-account
+##### 为什么仅增加 ThreadLocal 还不够
 
-5，6，7
+注解鉴权发生在 Controller 方法执行前，业务查询尚未执行。此时即使引入 ThreadLocal，也没有已经查询出的 `Picture`、`Space` 或 `SpaceUser` 可以复用，所以仍然需要在权限加载器中查询一次数据库，进入业务方法后再查询一次。
 
-修改鉴权使用自定义注解，删除代码中的检验
+当前实现调整了执行顺序：
+
+```text
+Controller / Service 查询业务对象
+              │
+              ▼
+将已查询对象写入 SpaceUserAuthContext
+              │
+              ▼
+SpaceUserAuthManager 执行编程式权限校验
+              │
+              ▼
+StpInterfaceImpl 从 ThreadLocal 取得同一个对象
+              │
+              ▼
+只查询当前操作者的团队成员关系，映射出权限列表
+              │
+              ▼
+finally 清理 ThreadLocal，继续执行后续业务
+```
+
+这样才能真正复用业务查询结果。例如删除图片时，业务代码查出的 `oldPicture` 会直接提供给权限加载器，不再根据请求参数重复查询图片。
+
+##### ThreadLocal 上下文
+
+`SaTokenContextHolder` 保存当前同步请求正在鉴权的业务上下文：
+
+```java
+public final class SaTokenContextHolder {
+
+    private static final ThreadLocal<SpaceUserAuthContext> CONTEXT = new ThreadLocal<>();
+
+    public static void setContext(SpaceUserAuthContext authContext) {
+        if (authContext == null) {
+            clear();
+            return;
+        }
+        CONTEXT.set(authContext);
+    }
+
+    public static SpaceUserAuthContext getContext() {
+        return CONTEXT.get();
+    }
+
+    public static void clear() {
+        CONTEXT.remove();
+    }
+}
+```
+
+`SpaceUserAuthContext` 提供了 `ofPicture`、`ofSpace`、`ofSpaceUser`、`ofPictureAndSpace` 等工厂方法，业务代码可以按当前操作传入已经查出的对象。
+
+##### 统一的编程式鉴权入口
+
+`SpaceUserAuthManager` 负责设置上下文、调用 Sa-Token 并清理上下文：
+
+```java
+public void checkPermission(String permission, SpaceUserAuthContext authContext) {
+    SaTokenContextHolder.setContext(authContext);
+    try {
+        StpKit.SPACE.checkPermission(permission);
+    } finally {
+        SaTokenContextHolder.clear();
+    }
+}
+```
+
+对于既要校验权限、又要把完整权限列表返回前端的场景，可以调用：
+
+```java
+public List<String> getPermissionList(SpaceUserAuthContext authContext) {
+    SaTokenContextHolder.setContext(authContext);
+    try {
+        return StpKit.SPACE.getPermissionList();
+    } finally {
+        SaTokenContextHolder.clear();
+    }
+}
+```
+
+##### 业务代码使用示例
+
+删除图片时先完成业务查询，再使用同一个 `Picture` 对象鉴权：
+
+```java
+Picture oldPicture = this.getById(id);
+ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
+
+spaceUserAuthManager.checkPermission(
+        SpaceUserPermissionConstant.PICTURE_DELETE,
+        SpaceUserAuthContext.ofPicture(oldPicture)
+);
+
+this.removeById(id);
+```
+
+删除空间成员时，Controller 已经查询了目标成员和所属空间，可以同时传入两个对象：
+
+```java
+SpaceUser oldSpaceUser = spaceUserService.getById(id);
+Space space = spaceService.getById(oldSpaceUser.getSpaceId());
+
+spaceUserAuthManager.checkPermission(
+        SpaceUserPermissionConstant.SPACE_USER_MANAGE,
+        SpaceUserAuthContext.ofSpaceUserAndSpace(oldSpaceUser, space)
+);
+```
+
+##### 权限加载器如何复用对象
+
+`StpInterfaceImpl#getAuthContextByRequest` 的名称暂时保留，但不再读取 HTTP 请求，而是直接读取 ThreadLocal：
+
+```java
+private SpaceUserAuthContext getAuthContextByRequest() {
+    return SaTokenContextHolder.getContext();
+}
+```
+
+权限加载器优先使用上下文中的完整对象：
+
+- 存在 `Picture` 时，直接取得图片的 `spaceId` 和 `userId`。
+- 存在 `Space` 时，不再根据 `spaceId` 重复查询空间。
+- 存在 `SpaceUser` 时，将它视为被操作的目标成员，并据此确定所属空间。
+- 只有上下文仅提供 ID、没有完整对象时，才回退查询数据库。
+- 没有传入任何鉴权上下文时返回空权限列表，采用失败关闭策略，不能默认授予管理员权限。
+
+对于团队空间，即使已经复用了目标对象，仍然必须查询“当前登录用户在该空间中的成员关系”。这次查询和目标对象查询含义不同，不能省略，也不能把目标成员的角色当成操作者角色。查询时只认可 `inviteStatus = 1` 的已接受成员。
+
+##### 清理与使用限制
+
+ThreadLocal 在线程池中必须清理，否则线程复用后可能把上一个请求的鉴权对象带到下一个请求。当前实现有两层清理：
+
+1. `SpaceUserAuthManager` 在每次权限校验的 `finally` 中立即清理。
+2. `HttpRequestWrapperFilter` 在整个请求结束的 `finally` 中兜底清理。
+
+该方案适用于当前 Spring MVC 的同步请求模型。不要把 ThreadLocal 上下文直接传入 `@Async`、异步线程池或响应式流水线；异步任务需要显式传递鉴权所需对象，并在对应线程中独立设置和清理上下文。
+
+完成改造后，图片上传、删除、编辑、按颜色搜索、批量编辑，以及空间成员查询、删除、编辑等接口不再依赖 `@SaSpaceCheckPermission` 前置解析请求。JSON 请求也不再需要为了鉴权而缓存并重复读取请求体。
 
 #### 全局异常处理器增加异常类型拦截
 

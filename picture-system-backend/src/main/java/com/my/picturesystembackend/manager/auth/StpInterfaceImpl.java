@@ -1,14 +1,6 @@
 package com.my.picturesystembackend.manager.auth;
 
 import cn.dev33.satoken.stp.StpInterface;
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.util.ObjUtil;
-import cn.hutool.core.util.ReflectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.extra.servlet.ServletUtil;
-import cn.hutool.http.ContentType;
-import cn.hutool.http.Header;
-import cn.hutool.json.JSONUtil;
 import com.my.picturesystembackend.constant.UserConstant;
 import com.my.picturesystembackend.exception.BusinessException;
 import com.my.picturesystembackend.exception.ErrorCode;
@@ -25,16 +17,9 @@ import com.my.picturesystembackend.service.SpaceService;
 import com.my.picturesystembackend.service.SpaceUserService;
 import com.my.picturesystembackend.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-
-import javax.servlet.http.HttpServletRequest;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 自定义权限加载接口实现类
@@ -42,9 +27,6 @@ import java.util.Map;
 @Component    // 保证此类被 SpringBoot 扫描，完成 Sa-Token 的自定义权限验证扩展
 @RequiredArgsConstructor
 public class StpInterfaceImpl implements StpInterface {
-
-    @Value("${server.servlet.context-path}")
-    private String contextPath;
 
     private final SpaceUserAuthManager spaceUserAuthManager;
     private final SpaceUserService spaceUserService;
@@ -75,13 +57,11 @@ public class StpInterfaceImpl implements StpInterface {
         if (!StpKit.SPACE_TYPE.equals(loginType)) {
             return Collections.emptyList();
         }
-        // 获取管理员权限列表
-        List<String> ADMIN_PERMISSIONS = spaceUserAuthManager.getPermissionsByRole(SpaceRoleEnum.ADMIN.getValue());
-        // 获取上下文对象
+        List<String> adminPermissions = spaceUserAuthManager.getPermissionsByRole(SpaceRoleEnum.ADMIN.getValue());
         SpaceUserAuthContext authContext = getAuthContextByRequest();
-        // 校验是否全字段为空，认为查询公共图库，返回管理员权限
-        if (isAllFieldsNull(authContext)) {
-            return ADMIN_PERMISSIONS;
+        // 编程式鉴权必须明确传入被操作对象；缺少上下文时失败关闭，避免误放行。
+        if (authContext == null) {
+            return Collections.emptyList();
         }
         // 获取当前登录用户id
         User loginUser = (User) StpKit.SPACE.getSessionByLoginId(loginId).get(UserConstant.USER_LOGIN_STATE);
@@ -89,21 +69,21 @@ public class StpInterfaceImpl implements StpInterface {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "用户未登录");
         }
         Long userId = loginUser.getId();
-        // 优先从上下文中获取 SpaceUser 对象
-        SpaceUser spaceUser = authContext.getSpaceUser();
-        if (spaceUser != null) {
-            return spaceUserAuthManager.getPermissionsByRole(spaceUser.getSpaceRole());
-        }
-        // spaceUserId 是“被操作的成员关系 ID”，并不一定属于当前登录用户。
-        // 先通过目标成员关系确定本次操作发生在哪个团队空间。
+        // spaceUser / spaceUserId 表示被操作的成员，而不是当前操作者。
+        SpaceUser targetSpaceUser = authContext.getSpaceUser();
         Long spaceUserId = authContext.getSpaceUserId();
-        if (spaceUserId != null) {
-            SpaceUser targetSpaceUser = spaceUserService.getById(spaceUserId);
+        if (targetSpaceUser != null || spaceUserId != null) {
+            if (targetSpaceUser == null) {
+                targetSpaceUser = spaceUserService.getById(spaceUserId);
+            }
             if (targetSpaceUser == null) {
                 throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "未找到空间用户信息");
             }
 
-            Space targetSpace = spaceService.getById(targetSpaceUser.getSpaceId());
+            Space targetSpace = authContext.getSpace();
+            if (targetSpace == null) {
+                targetSpace = spaceService.getById(targetSpaceUser.getSpaceId());
+            }
             if (targetSpace == null) {
                 throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "未找到空间信息");
             }
@@ -125,35 +105,40 @@ public class StpInterfaceImpl implements StpInterface {
             }
             return spaceUserAuthManager.getPermissionsByRole(currentUserSpaceUser.getSpaceRole());
         }
-        // 如果没有 spaceUserId, 尝试通过 spaceId 或 pictureId 获取space对象并处理
+        // 优先复用业务层已经查询出的 Picture / Space，只有上下文仅提供 id 时才回退查库。
+        Picture picture = authContext.getPicture();
+        Space space = authContext.getSpace();
         Long spaceId = authContext.getSpaceId();
-        if (spaceId == null) {
-            // 获取图片id
+        if (space != null) {
+            spaceId = space.getId();
+        }
+        if (picture == null && spaceId == null) {
             Long pictureId = authContext.getPictureId();
-            if (pictureId == null) {
-                // 图片id也是空（同时空间id为空，spaceUserId为空），操作对象不在范围内，放行返回 管理员权限
-                return ADMIN_PERMISSIONS;
+            if (pictureId != null) {
+                picture = pictureService.lambdaQuery()
+                        .eq(Picture::getId, pictureId)
+                        .select(Picture::getId, Picture::getSpaceId, Picture::getUserId)
+                        .one();
             }
-            Picture picture = pictureService.lambdaQuery()
-                    .eq(Picture::getId, pictureId)
-                    .select(Picture::getId, Picture::getSpaceId, Picture::getUserId)
-                    .one();
-            if (picture == null) {
-                throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "未找到图片信息");
-            }
+        }
+        if (picture != null) {
             spaceId = picture.getSpaceId();
             // 公共图库，仅本人和管理员可以操作
             if (spaceId == null) {
                 if (picture.getUserId().equals(userId) || userService.isAdmin(loginUser)) {
-                    return ADMIN_PERMISSIONS;
+                    return adminPermissions;
                 }
                 // 只有浏览权限
                 return Collections.singletonList(SpaceUserPermissionConstant.PICTURE_VIEW);
             }
         }
 
-        // 查询空间信息
-        Space space = spaceService.getById(spaceId);
+        if (spaceId == null) {
+            return Collections.emptyList();
+        }
+        if (space == null || !spaceId.equals(space.getId())) {
+            space = spaceService.getById(spaceId);
+        }
         if (space == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "未找到空间信息");
         }
@@ -161,14 +146,14 @@ public class StpInterfaceImpl implements StpInterface {
         if (space.getSpaceType() == SpaceTypeEnum.PRIVATE.getValue()) {
             // 仅本人或管理员可以操作
             if (space.getUserId().equals(userId) || userService.isAdmin(loginUser)) {
-                return ADMIN_PERMISSIONS;
+                return adminPermissions;
             }
             // 无权限
             return Collections.emptyList();
         } else {
             // 团队空间
             // 查询当前登录用户在该空间的角色
-            spaceUser = spaceUserService.lambdaQuery()
+            SpaceUser spaceUser = spaceUserService.lambdaQuery()
                     .eq(SpaceUser::getSpaceId, spaceId)
                     .eq(SpaceUser::getUserId, userId)
                     .eq(SpaceUser::getInviteStatus, SpaceUserInviteStatusEnum.ACCEPTED.getValue())
@@ -189,61 +174,9 @@ public class StpInterfaceImpl implements StpInterface {
     }
 
     /**
-     * 从请求中构造出上下文对象
+     * 获取业务代码在当前线程中设置的鉴权上下文。
      */
     private SpaceUserAuthContext getAuthContextByRequest() {
-        HttpServletRequest request = ((ServletRequestAttributes) (RequestContextHolder.currentRequestAttributes())).getRequest();
-        String contentType = request.getHeader(Header.CONTENT_TYPE.getValue());
-        SpaceUserAuthContext authRequest;
-        // 区分post, get
-        if (ContentType.JSON.getValue().equals(contentType)) {
-            String body = ServletUtil.getBody(request); // 流只能读取一次
-            authRequest = JSONUtil.toBean(body, SpaceUserAuthContext.class);
-        } else {
-            Map<String, String> paramMap = ServletUtil.getParamMap(request);
-            authRequest = BeanUtil.toBean(paramMap, SpaceUserAuthContext.class);
-        }
-        // 根据请求路径，区分id的含义
-        Long id = authRequest.getId();
-        if (ObjUtil.isNotNull(id)) {
-            // 获取请求的 URI /api/picture/xxx
-            String requestURI = request.getRequestURI();
-            // 去掉 /api/ =》picture/xxx
-            String partURI = requestURI.replace(contextPath + "/", "");
-            // 获取前缀，即第一个/前面的内容
-            String moduleName = StrUtil.subBefore(partURI, "/", false);
-            switch (moduleName) {
-                case "picture":
-                    authRequest.setPictureId(id);
-                    break;
-                case "space":
-                    authRequest.setSpaceId(id);
-                    break;
-                case "spaceUser":
-                    authRequest.setSpaceUserId(id);
-                    break;
-                default:
-            }
-        }
-
-        return authRequest;
-    }
-
-    /**
-     * 利用反射判断对象全字段是否为null
-     *
-     * @param object 对象
-     * @return 结果
-     */
-    private boolean isAllFieldsNull(Object object) {
-        if (object == null) {
-            return true;
-        }
-        // 获取所有字段并判断是否所有字段都为空
-        return Arrays.stream(ReflectUtil.getFields(object.getClass()))
-                // 获取字段值
-                .map(field -> ReflectUtil.getFieldValue(object, field))
-                // 检查是否所有字段值都为空
-                .allMatch(ObjUtil::isEmpty);
+        return SaTokenContextHolder.getContext();
     }
 }

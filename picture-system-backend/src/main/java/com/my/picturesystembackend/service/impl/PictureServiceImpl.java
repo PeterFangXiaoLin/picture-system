@@ -19,7 +19,7 @@ import com.my.picturesystembackend.exception.ErrorCode;
 import com.my.picturesystembackend.exception.ThrowUtils;
 import com.my.picturesystembackend.manager.CosManager;
 import com.my.picturesystembackend.manager.auth.SpaceUserAuthManager;
-import com.my.picturesystembackend.manager.auth.StpKit;
+import com.my.picturesystembackend.manager.auth.SpaceUserAuthContext;
 import com.my.picturesystembackend.manager.auth.model.SpaceUserPermissionConstant;
 import com.my.picturesystembackend.manager.upload.FilePictureUpload;
 import com.my.picturesystembackend.manager.upload.PictureUploadTemplate;
@@ -133,9 +133,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         if (spaceId != null) {
             Space space = spaceService.getById(spaceId);
             ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
-            List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser);
-            ThrowUtils.throwIf(!permissionList.contains(SpaceUserPermissionConstant.PICTURE_UPLOAD),
-                    ErrorCode.NO_AUTH_ERROR, "无权限使用该空间");
+            spaceUserAuthManager.checkPermission(SpaceUserPermissionConstant.PICTURE_UPLOAD,
+                    SpaceUserAuthContext.ofSpace(space));
             // 校验空间额度
             if (space.getTotalCount() >= space.getMaxCount()) {
                 throw new BusinessException(ErrorCode.OPERATION_ERROR, "空间图片数量已达到最大值");
@@ -255,8 +254,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         // 判断旧照片是否存在
         Picture oldPicture = this.getById(id);
         ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
-        // 权限校验
-//        checkPictureAuth(loginUser, oldPicture);
+        spaceUserAuthManager.checkPermission(SpaceUserPermissionConstant.PICTURE_DELETE,
+                SpaceUserAuthContext.ofPicture(oldPicture));
 
         transactionTemplate.execute(status -> {
             // 操作数据库
@@ -343,20 +342,21 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR);
         // 空间权限校验
         Space space = null;
+        List<String> permissionList = Collections.emptyList();
         Long spaceId = picture.getSpaceId();
-//        User loginUser = null;
         if (spaceId != null) {
-            boolean hasPermission = StpKit.SPACE.hasPermission(SpaceUserPermissionConstant.PICTURE_VIEW);
-            ThrowUtils.throwIf(!hasPermission, ErrorCode.NO_AUTH_ERROR);
             space = spaceService.getById(spaceId);
             ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
-//            loginUser = userService.getLoginUser(request);
-            // 改为使用注解鉴权
-//            checkPictureAuth(loginUser, picture);
+            permissionList = spaceUserAuthManager.getPermissionList(
+                    SpaceUserAuthContext.ofPictureAndSpace(picture, space));
+            ThrowUtils.throwIf(!permissionList.contains(SpaceUserPermissionConstant.PICTURE_VIEW),
+                    ErrorCode.NO_AUTH_ERROR);
         }
         // 查询用户信息，用于是否点赞
         User loginUser = userService.getLoginUserPermitNull(request);
-        return this.getPictureVO(picture, loginUser, space);
+        PictureVO pictureVO = this.getPictureVO(picture, loginUser);
+        pictureVO.setPermissionList(permissionList);
+        return pictureVO;
     }
 
     @Override
@@ -546,8 +546,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             pictureQueryRequest.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
             pictureQueryRequest.setNullSpaceId(true);
         } else {
-            boolean hasPermission = StpKit.SPACE.hasPermission(SpaceUserPermissionConstant.PICTURE_VIEW);
-            ThrowUtils.throwIf(!hasPermission, ErrorCode.NO_AUTH_ERROR);
+            spaceUserAuthManager.checkPermission(SpaceUserPermissionConstant.PICTURE_VIEW,
+                    SpaceUserAuthContext.ofSpaceId(spaceId));
             // 私有空间
 //            User loginUser = userService.getLoginUser(request);
 //            Space space = spaceService.getById(spaceId);
@@ -822,20 +822,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
     @Override
     public void checkPictureAuth(User loginUser, Picture picture) {
-        Long spaceId = picture.getSpaceId();
-        if (spaceId == null) {
-            // 图片在公共空间，仅自己和管理员有权限
-            if (!picture.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
-                throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-            }
-            return;
-        }
-
-        Space space = spaceService.getById(spaceId);
-        ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
-        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser);
-        ThrowUtils.throwIf(!permissionList.contains(SpaceUserPermissionConstant.PICTURE_EDIT),
-                ErrorCode.NO_AUTH_ERROR);
+        ThrowUtils.throwIf(loginUser == null || picture == null, ErrorCode.NO_AUTH_ERROR);
+        spaceUserAuthManager.checkPermission(SpaceUserPermissionConstant.PICTURE_EDIT,
+                SpaceUserAuthContext.ofPicture(picture));
     }
 
     /**
@@ -891,9 +880,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         // 2. 校验空间权限
         Space space = spaceService.getById(spaceId);
         ThrowUtils.throwIf(space == null, ErrorCode.PARAMS_ERROR, "空间不存在");
-        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser);
-        ThrowUtils.throwIf(!permissionList.contains(SpaceUserPermissionConstant.PICTURE_VIEW),
-                ErrorCode.NO_AUTH_ERROR, "没有空间访问权限");
+        spaceUserAuthManager.checkPermission(SpaceUserPermissionConstant.PICTURE_VIEW,
+                SpaceUserAuthContext.ofSpace(space));
 
         // 3. 查询该空间下的所有有picColor的图片
         List<Picture> pictureList = this.lambdaQuery()
@@ -1012,9 +1000,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         // 2. 校验空间权限
         Space space = spaceService.getById(spaceId);
         ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
-        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser);
-        ThrowUtils.throwIf(!permissionList.contains(SpaceUserPermissionConstant.PICTURE_EDIT),
-                ErrorCode.NO_AUTH_ERROR, "空间权限不足");
+        spaceUserAuthManager.checkPermission(SpaceUserPermissionConstant.PICTURE_EDIT,
+                SpaceUserAuthContext.ofSpace(space));
 
         // 3. 查询旧图片
         List<Picture> pictureList = this.lambdaQuery()

@@ -55,6 +55,35 @@ public class SpaceUserAuthManager {
         return userRole == null ? Collections.emptyList() : userRole.getPermissions();
     }
 
+    /**
+     * 使用业务代码已经查询出的对象进行编程式鉴权。
+     *
+     * <p>上下文只在本次校验期间可见，并在 finally 中清理，避免线程池复用导致数据串请求。</p>
+     *
+     * @param permission 需要的权限码
+     * @param authContext 被操作对象上下文
+     */
+    public void checkPermission(String permission, SpaceUserAuthContext authContext) {
+        SaTokenContextHolder.setContext(authContext);
+        try {
+            StpKit.SPACE.checkPermission(permission);
+        } finally {
+            SaTokenContextHolder.clear();
+        }
+    }
+
+    /**
+     * 获取指定业务上下文下的完整权限列表，供既要校验又要返回权限列表的场景复用。
+     */
+    public List<String> getPermissionList(SpaceUserAuthContext authContext) {
+        SaTokenContextHolder.setContext(authContext);
+        try {
+            return StpKit.SPACE.getPermissionList();
+        } finally {
+            SaTokenContextHolder.clear();
+        }
+    }
+
     public List<String> getPermissionList(Space space, User loginUser) {
         if (loginUser == null) {
             return Collections.emptyList();
