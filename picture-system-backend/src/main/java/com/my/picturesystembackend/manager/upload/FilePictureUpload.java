@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Locale;
 
 import static com.my.picturesystembackend.constant.UploadPictureConstant.ALLOW_FILE_FORMAT;
 import static com.my.picturesystembackend.constant.UploadPictureConstant.ONE_MB;
@@ -31,7 +32,7 @@ public class FilePictureUpload extends PictureUploadTemplate {
         // 校验文件后缀
         String originalFilename = multipartFile.getOriginalFilename();
         ThrowUtils.throwIf(originalFilename == null, ErrorCode.PARAMS_ERROR, "文件名称不能为空");
-        String fileSuffix = FileUtil.getSuffix(originalFilename);
+        String fileSuffix = FileUtil.getSuffix(originalFilename).toLowerCase(Locale.ROOT);
         ThrowUtils.throwIf(!ALLOW_FILE_FORMAT.contains(fileSuffix), ErrorCode.PARAMS_ERROR, "文件格式错误");
     }
 

@@ -55,14 +55,17 @@ public abstract class PictureUploadTemplate {
 
             // 4. 上传图片到对象存储
             PutObjectResult putObjectResult = cosManager.putPictureObject(uploadPath, file);
-            ImageInfo imageInfo = putObjectResult.getCiUploadResult().getOriginalInfo().getImageInfo();
             CIUploadResult ciUploadResult = putObjectResult.getCiUploadResult();
-            List<CIObject> objectList = ciUploadResult.getProcessResults().getObjectList();
-            if (CollUtil.isNotEmpty(objectList)) {
-                OriginalInfo originalInfo = ciUploadResult.getOriginalInfo();
-                CIObject compressedCiObject = objectList.get(0);
-                // 封装返回结果
-                return buildResult(originFilename, file, originalInfo, compressedCiObject, imageInfo);
+            OriginalInfo originalInfo = ciUploadResult.getOriginalInfo();
+            ImageInfo imageInfo = originalInfo.getImageInfo();
+            // WebP 不需要再次压缩，COS 不会返回图片处理结果
+            if (ciUploadResult.getProcessResults() != null) {
+                List<CIObject> objectList = ciUploadResult.getProcessResults().getObjectList();
+                if (CollUtil.isNotEmpty(objectList)) {
+                    CIObject compressedCiObject = objectList.get(0);
+                    // 封装返回结果
+                    return buildResult(originFilename, file, originalInfo, compressedCiObject, imageInfo);
+                }
             }
 
 
