@@ -8,9 +8,11 @@ import * as mainController from './mainController'
 import * as pictureController from './pictureController'
 import * as spaceController from './spaceController'
 import * as spaceAnalyzeController from './spaceAnalyzeController'
+import * as spaceUserController from './spaceUserController'
 import * as tagController from './tagController'
 import * as thumbController from './thumbController'
 import * as userController from './userController'
+import * as userNotificationController from './userNotificationController'
 export default {
   categoryController,
   fileController,
@@ -18,7 +20,9 @@ export default {
   pictureController,
   spaceController,
   spaceAnalyzeController,
+  spaceUserController,
   tagController,
   thumbController,
   userController,
+  userNotificationController,
 }

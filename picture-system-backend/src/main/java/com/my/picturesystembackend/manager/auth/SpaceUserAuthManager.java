@@ -10,6 +10,7 @@ import com.my.picturesystembackend.model.entity.SpaceUser;
 import com.my.picturesystembackend.model.entity.User;
 import com.my.picturesystembackend.model.enums.SpaceRoleEnum;
 import com.my.picturesystembackend.model.enums.SpaceTypeEnum;
+import com.my.picturesystembackend.model.enums.SpaceUserInviteStatusEnum;
 import com.my.picturesystembackend.service.SpaceUserService;
 import com.my.picturesystembackend.service.UserService;
 import org.springframework.stereotype.Component;
@@ -114,6 +115,7 @@ public class SpaceUserAuthManager {
                 SpaceUser spaceUser = spaceUserService.lambdaQuery()
                         .eq(SpaceUser::getSpaceId, space.getId())
                         .eq(SpaceUser::getUserId, loginUser.getId())
+                        .eq(SpaceUser::getInviteStatus, SpaceUserInviteStatusEnum.ACCEPTED.getValue())
                         .one();
                 if (spaceUser == null) {
                     return Collections.emptyList();

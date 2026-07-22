@@ -14,6 +14,7 @@ import com.my.picturesystembackend.model.entity.SpaceUser;
 import com.my.picturesystembackend.model.entity.User;
 import com.my.picturesystembackend.model.enums.SpaceRoleEnum;
 import com.my.picturesystembackend.model.enums.SpaceUserInviteStatusEnum;
+import com.my.picturesystembackend.model.enums.UserNotificationTypeEnum;
 import com.my.picturesystembackend.model.vo.SpaceUserVO;
 import com.my.picturesystembackend.model.vo.SpaceVO;
 import com.my.picturesystembackend.model.vo.UserVO;
@@ -21,10 +22,12 @@ import com.my.picturesystembackend.service.SpaceService;
 import com.my.picturesystembackend.service.SpaceUserService;
 import com.my.picturesystembackend.mapper.SpaceUserMapper;
 import com.my.picturesystembackend.service.UserService;
+import com.my.picturesystembackend.service.UserNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
@@ -50,14 +53,19 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
     @Lazy
     private SpaceService spaceService;
     private final UserService userService;
+    private final UserNotificationService notificationService;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Long addSpaceUser(SpaceUserAddRequest spaceUserAddRequest, User loginUser) {
         ThrowUtils.throwIf(spaceUserAddRequest == null, ErrorCode.PARAMS_ERROR);
         ThrowUtils.throwIf(loginUser == null || loginUser.getId() == null, ErrorCode.NO_AUTH_ERROR);
         SpaceUser spaceUser = new SpaceUser();
         BeanUtils.copyProperties(spaceUserAddRequest, spaceUser);
         validSpaceUser(spaceUser, true);
+        if (StrUtil.isBlank(spaceUser.getSpaceRole())) {
+            spaceUser.setSpaceRole(SpaceRoleEnum.VIEWER.getValue());
+        }
 
         // 只有已加入空间的管理员才可以发出邀请
         boolean isSpaceAdmin = this.lambdaQuery()
@@ -87,15 +95,18 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
             spaceUser.setId(existingSpaceUser.getId());
             boolean result = this.updateById(spaceUser);
             ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+            sendInviteNotification(spaceUser, loginUser);
             return spaceUser.getId();
         }
 
         boolean result = this.save(spaceUser);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        sendInviteNotification(spaceUser, loginUser);
         return spaceUser.getId();
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean reviewSpaceUserInvite(Long id, Integer inviteStatus, User loginUser) {
         ThrowUtils.throwIf(id == null || id <= 0 || loginUser == null || loginUser.getId() == null,
                 ErrorCode.PARAMS_ERROR);
@@ -112,6 +123,16 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
                         .equals(invitation.getInviteStatus()),
                 ErrorCode.OPERATION_ERROR, "邀请已处理");
 
+        // 在状态变更前获取现有管理员，避免新加入的管理员收到自己操作的结果通知
+        List<Long> adminUserIds = this.lambdaQuery()
+                .eq(SpaceUser::getSpaceId, invitation.getSpaceId())
+                .eq(SpaceUser::getSpaceRole, SpaceRoleEnum.ADMIN.getValue())
+                .eq(SpaceUser::getInviteStatus, SpaceUserInviteStatusEnum.ACCEPTED.getValue())
+                .list()
+                .stream()
+                .map(SpaceUser::getUserId)
+                .collect(Collectors.toList());
+
         // 带上旧状态作为更新条件，避免并发请求重复处理邀请
         boolean result = this.lambdaUpdate()
                 .eq(SpaceUser::getId, id)
@@ -120,7 +141,42 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
                 .set(SpaceUser::getInviteStatus, inviteStatus)
                 .update();
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "邀请已处理");
+
+        notificationService.finishRelatedNotification(loginUser.getId(),
+                UserNotificationTypeEnum.SPACE_INVITE.name(), invitation.getId(), inviteStatus);
+        Space space = spaceService.getById(invitation.getSpaceId());
+        String spaceName = space == null ? String.valueOf(invitation.getSpaceId()) : space.getSpaceName();
+        String userName = getUserDisplayName(loginUser);
+        boolean accepted = statusEnum == SpaceUserInviteStatusEnum.ACCEPTED;
+        String type = accepted
+                ? UserNotificationTypeEnum.SPACE_INVITE_ACCEPTED.name()
+                : UserNotificationTypeEnum.SPACE_INVITE_REJECTED.name();
+        String action = accepted ? "接受" : "拒绝";
+        notificationService.sendNotification(adminUserIds, type,
+                accepted ? "空间邀请已接受" : "空间邀请已拒绝",
+                String.format("用户「%s」已%s加入空间「%s」的邀请", userName, action, spaceName),
+                invitation.getId(), invitation.getSpaceId(), loginUser.getId(), inviteStatus);
         return true;
+    }
+
+    private void sendInviteNotification(SpaceUser invitation, User inviter) {
+        Space space = spaceService.getById(invitation.getSpaceId());
+        String spaceName = space == null ? String.valueOf(invitation.getSpaceId()) : space.getSpaceName();
+        SpaceRoleEnum roleEnum = SpaceRoleEnum.getEnumByValue(invitation.getSpaceRole());
+        String roleName = roleEnum == null ? invitation.getSpaceRole() : roleEnum.getText();
+        notificationService.sendNotification(invitation.getUserId(),
+                UserNotificationTypeEnum.SPACE_INVITE.name(), "新的空间邀请",
+                String.format("管理员「%s」邀请你加入空间「%s」，角色为%s",
+                        getUserDisplayName(inviter), spaceName, roleName),
+                invitation.getId(), invitation.getSpaceId(), inviter.getId(),
+                SpaceUserInviteStatusEnum.PENDING.getValue());
+    }
+
+    private String getUserDisplayName(User user) {
+        if (user == null) {
+            return "未知用户";
+        }
+        return StrUtil.blankToDefault(user.getUserName(), user.getUserAccount());
     }
 
     @Override

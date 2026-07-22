@@ -144,6 +144,15 @@ const routes = [
     }
   },
   {
+    path: '/spaceUserManage/:id',
+    name: '空间成员管理',
+    component: () => import('@/pages/admin/SpaceUserManagePage.vue'),
+    props: true,
+    meta: {
+      show: false
+    }
+  },
+  {
     path: '/search_picture',
     name: '图片搜索',
     component: () => import('@/pages/SearchPicturePage.vue'),

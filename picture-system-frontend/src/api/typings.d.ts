@@ -83,6 +83,18 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseListSpaceUserVO_ = {
+    code?: number
+    data?: SpaceUserVO[]
+    message?: string
+  }
+
+  type BaseResponseListUserNotification_ = {
+    code?: number
+    data?: UserNotification[]
+    message?: string
+  }
+
   type BaseResponseListTagVO_ = {
     code?: number
     data?: TagVO[]
@@ -203,6 +215,12 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseSpaceUser_ = {
+    code?: number
+    data?: SpaceUser
+    message?: string
+  }
+
   type BaseResponseSpaceVO_ = {
     code?: number
     data?: SpaceVO
@@ -294,11 +312,6 @@ declare namespace API {
   type CreatePictureOutPaintingTaskRequest = {
     parameters?: Parameters
     pictureId?: string
-  }
-
-  type deletePictureUsingPOSTParams = {
-    /** id */
-    id?: string
   }
 
   type DeleteRequest = {
@@ -756,6 +769,8 @@ declare namespace API {
     introduction?: string
     /** 图片名称 */
     name?: string
+    /** 权限列表 */
+    permissionList?: string[]
     /** 图片主色调 */
     picColor?: string
     /** 图片格式 */
@@ -811,6 +826,7 @@ declare namespace API {
     maxSize?: number
     spaceLevel?: number
     spaceName?: string
+    spaceType?: number
     totalCount?: number
     totalSize?: number
     updateTime?: string
@@ -822,6 +838,8 @@ declare namespace API {
     spaceLevel?: number
     /** 空间名称 */
     spaceName?: string
+    /** 空间类型：0-私有空间，1-团队空间 */
+    spaceType?: number
   }
 
   type SpaceCategoryAnalyzeRequest = {
@@ -877,6 +895,8 @@ declare namespace API {
     spaceLevel?: number
     /** 空间名称 */
     spaceName?: string
+    /** 空间类型：0-私有空间，1-团队空间 */
+    spaceType?: number
     /** 用户 id */
     userId?: string
   }
@@ -957,6 +977,26 @@ declare namespace API {
     usedSize?: number
   }
 
+  type SpaceUser = {
+    createTime?: string
+    createUserId?: string
+    id?: string
+    inviteStatus?: number
+    spaceId?: string
+    spaceRole?: string
+    updateTime?: string
+    userId?: string
+  }
+
+  type SpaceUserAddRequest = {
+    /** 空间 id */
+    spaceId?: string
+    /** 空间角色：viewer/editor/admin */
+    spaceRole?: string
+    /** 用户id */
+    userId?: string
+  }
+
   type SpaceUserAnalyzeRequest = {
     /** 全空间分析 */
     queryAll?: boolean
@@ -977,6 +1017,74 @@ declare namespace API {
     period?: string
   }
 
+  type SpaceUserEditRequest = {
+    /** id */
+    id?: string
+    /** 空间角色：viewer/editor/admin */
+    spaceRole?: string
+  }
+
+  type SpaceUserInviteReviewRequest = {
+    /** 空间成员记录 id */
+    id: string
+    /** 邀请确认状态：1-接受；2-拒绝 */
+    inviteStatus: number
+  }
+
+  type SpaceUserQueryRequest = {
+    /** 邀请人 id */
+    createUserId?: string
+    /** id */
+    id?: string
+    /** 邀请确认状态：0-待确认；1-已接受；2-已拒绝 */
+    inviteStatus?: number
+    /** 空间 id */
+    spaceId?: string
+    /** 空间角色：viewer/editor/admin */
+    spaceRole?: string
+    /** 用户id */
+    userId?: string
+  }
+
+  type SpaceUserVO = {
+    /** 创建时间 */
+    createTime?: string
+    /** 邀请人 id */
+    createUserId?: string
+    /** id */
+    id?: string
+    /** 邀请确认状态：0-待确认；1-已接受；2-已拒绝 */
+    inviteStatus?: number
+    space?: SpaceVO
+    /** 空间 id */
+    spaceId?: string
+    /** 空间角色：viewer/editor/admin */
+    spaceRole?: string
+    /** 更新时间 */
+    updateTime?: string
+    user?: UserVO
+    /** 用户id */
+    userId?: string
+  }
+
+  type UserNotification = {
+    /** 可操作通知业务状态：0-待确认，1-已接受，2-已拒绝 */
+    actionStatus?: number
+    actorUserId?: string
+    content?: string
+    createTime?: string
+    id?: string
+    /** 是否已读：0-未读；1-已读 */
+    isRead?: number
+    /** 空间成员记录 id */
+    relatedId?: string
+    spaceId?: string
+    title?: string
+    type?: 'SPACE_INVITE' | 'SPACE_INVITE_ACCEPTED' | 'SPACE_INVITE_REJECTED' | string
+    updateTime?: string
+    userId?: string
+  }
+
   type SpaceVO = {
     /** 创建时间 */
     createTime?: string
@@ -988,10 +1096,14 @@ declare namespace API {
     maxCount?: number
     /** 空间图片的最大总大小 */
     maxSize?: number
+    /** 权限列表 */
+    permissionList?: string[]
     /** 空间级别：0-普通版 1-专业版 2-旗舰版 */
     spaceLevel?: number
     /** 空间名称 */
     spaceName?: string
+    /** 空间类型：0-私有空间，1-团队空间 */
+    spaceType?: number
     /** 当前空间下的图片数量 */
     totalCount?: number
     /** 当前空间下图片的总大小 */
