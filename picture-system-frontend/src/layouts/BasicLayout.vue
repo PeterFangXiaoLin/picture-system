@@ -2,7 +2,7 @@
   <div id="basic-layout">
     <a-layout style="min-height: 100vh">
       <!-- 只在非身份认证页面显示导航栏 -->
-      <a-layout-header v-if="!isAuthPage" class="header" >
+      <a-layout-header v-if="!isAuthPage" class="header">
         <GlobalHeader />
       </a-layout-header>
       <a-layout>
@@ -34,10 +34,17 @@ const isAuthPage = computed(() => {
 
 <style scoped>
 #basic-layout .header {
-  padding-inline: 20px;
-  background: white;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 64px;
+  padding-inline: 0;
+  line-height: normal;
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid #edf0f3;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 4%);
+  backdrop-filter: blur(12px);
   color: unset;
-  margin-bottom: 1px;
 }
 
 #basic-layout .content {

@@ -1,25 +1,24 @@
 <template>
   <div id="global-header">
-    <a-row :wrap="false">
-      <a-col flex="200px">
-        <RouterLink to="/">
-          <h1 class="title-bar">
-            <img class="logo" src="../assets/logo.png" alt="logo" />
-            <span class="title">AI云图库</span>
-          </h1>
-        </RouterLink>
-      </a-col>
-      <a-col flex="auto">
+    <div class="header-shell">
+      <RouterLink to="/" class="brand" aria-label="返回 AI 云图库首页">
+        <img class="logo" src="../assets/logo.png" alt="AI 云图库" />
+        <span class="brand-title">AI云图库</span>
+      </RouterLink>
+
+      <nav class="main-navigation" aria-label="主导航">
         <a-menu
           v-model:selectedKeys="current"
+          class="main-menu"
           mode="horizontal"
           :items="items"
           @click="doMenuClick"
         />
-      </a-col>
-      <a-col flex="none">
-        <div class="user-login-status">
-          <a-space v-if="loginUserStore.loginUser.id" :size="16">
+      </nav>
+
+      <div class="header-actions">
+        <template v-if="loginUserStore.loginUser.id">
+          <a-tooltip title="通知">
             <a-badge :count="unreadCount" :overflow-count="99">
               <a-button
                 type="text"
@@ -31,15 +30,23 @@
                 <BellOutlined />
               </a-button>
             </a-badge>
-            <a-dropdown placement="bottomRight">
+          </a-tooltip>
+
+          <a-divider type="vertical" class="action-divider" />
+
+          <a-dropdown placement="bottomRight" :trigger="['click']">
+            <button type="button" class="profile-trigger" aria-label="打开用户菜单">
               <a-avatar
                 :size="36"
                 :src="avatarSrc"
                 :style="avatarStyle"
-                class="cursor-pointer"
+                class="profile-avatar"
               >
                 {{ avatarText }}
               </a-avatar>
+              <span class="profile-name">{{ loginUserStore.loginUser.userName || '用户' }}</span>
+              <DownOutlined class="profile-arrow" />
+            </button>
               <template #overlay>
                 <a-menu @click="handleMenuClick">
                   <a-menu-item key="profile">
@@ -65,14 +72,11 @@
                   </a-menu-item>
                 </a-menu>
               </template>
-            </a-dropdown>
-          </a-space>
-          <div v-else>
-            <a-button type="primary" href="/user/login">登录</a-button>
-          </div>
-        </div>
-      </a-col>
-    </a-row>
+          </a-dropdown>
+        </template>
+        <a-button v-else type="primary" href="/user/login" class="login-button">登录</a-button>
+      </div>
+    </div>
     <a-drawer v-model:open="notificationDrawerOpen" title="通知中心" width="420">
       <template #extra>
         <a-button type="link" :disabled="unreadCount === 0" @click="markAllRead">
@@ -135,7 +139,13 @@
 <script setup lang="ts">
 import { ref, computed, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { BellOutlined, UserOutlined, LogoutOutlined, HistoryOutlined } from '@ant-design/icons-vue'
+import {
+  BellOutlined,
+  DownOutlined,
+  UserOutlined,
+  LogoutOutlined,
+  HistoryOutlined,
+} from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import routes from '@/router/routes.ts'
 import checkAccess from '@/access/checkAccess.ts'
@@ -372,30 +382,137 @@ const doLogout = async () => {
 #global-header {
   height: 64px;
   width: 100%;
-  padding-left: 24px;
-  padding-right: 24px;
+  background: transparent;
 }
 
-.title-bar {
+.header-shell {
   display: flex;
   align-items: center;
   height: 100%;
+  width: 100%;
+  padding: 0 28px;
+  gap: 0;
 }
 
-.title {
-  color: black;
-  font-size: 18px;
-  font-weight: 600;
-  margin-left: 16px;
-  line-height: 1;
+.brand {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  height: 44px;
+  margin-right: 24px;
+  color: #111827;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .logo {
-  height: 48px;
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.brand-title {
+  margin-left: 10px;
+  font-size: 19px;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: -0.2px;
+}
+
+.main-navigation {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  align-self: stretch;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.main-menu {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-bottom: 0;
+  background: transparent;
+}
+
+.header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  align-self: stretch;
+  gap: 10px;
+  margin-left: 18px;
 }
 
 .notification-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  color: #374151;
   font-size: 20px;
+  line-height: 1;
+}
+
+.notification-button:hover {
+  color: #1677ff;
+  background: #f3f6fa;
+}
+
+.action-divider {
+  top: 0;
+  height: 22px;
+  margin: 0 2px;
+  border-color: #e5e7eb;
+}
+
+.profile-trigger {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 4px 8px 4px 4px;
+  color: #1f2937;
+  font: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 22px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.profile-trigger:hover,
+.profile-trigger:focus-visible {
+  background: #f3f6fa;
+  outline: none;
+}
+
+.profile-avatar {
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+
+.profile-name {
+  max-width: 96px;
+  margin-left: 9px;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-arrow {
+  margin-left: 6px;
+  color: #9ca3af;
+  font-size: 11px;
+}
+
+.login-button {
+  min-width: 72px;
+  border-radius: 8px;
 }
 
 .notification-item {
@@ -416,5 +533,42 @@ const doLogout = async () => {
 .notification-content {
   color: #595959;
   line-height: 1.6;
+}
+
+@media (max-width: 1280px) {
+  .header-shell {
+    padding: 0 20px;
+  }
+
+  .brand {
+    margin-right: 12px;
+  }
+
+  .profile-name,
+  .profile-arrow {
+    display: none;
+  }
+
+  .profile-trigger {
+    padding-right: 4px;
+  }
+}
+
+@media (max-width: 900px) {
+  .header-shell {
+    padding: 0 14px;
+  }
+
+  .brand-title {
+    display: none;
+  }
+
+  .brand {
+    margin-right: 8px;
+  }
+
+  .header-actions {
+    margin-left: 8px;
+  }
 }
 </style>
