@@ -38,6 +38,13 @@ public interface SpaceUserService extends IService<SpaceUser> {
     boolean reviewSpaceUserInvite(Long id, Integer inviteStatus, User loginUser);
 
     /**
+     * 为当前用户的历史待确认邀请补齐缺失的可操作通知。
+     *
+     * @param loginUser 当前登录的受邀用户
+     */
+    void syncPendingInviteNotifications(User loginUser);
+
+    /**
      * 校验参数
      *
      * @param spaceUser 空间成员

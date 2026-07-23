@@ -12,6 +12,7 @@ import com.my.picturesystembackend.model.dto.spaceuser.SpaceUserQueryRequest;
 import com.my.picturesystembackend.model.entity.Space;
 import com.my.picturesystembackend.model.entity.SpaceUser;
 import com.my.picturesystembackend.model.entity.User;
+import com.my.picturesystembackend.model.entity.UserNotification;
 import com.my.picturesystembackend.model.enums.SpaceRoleEnum;
 import com.my.picturesystembackend.model.enums.SpaceUserInviteStatusEnum;
 import com.my.picturesystembackend.model.enums.UserNotificationTypeEnum;
@@ -159,6 +160,45 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
         return true;
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void syncPendingInviteNotifications(User loginUser) {
+        ThrowUtils.throwIf(loginUser == null || loginUser.getId() == null, ErrorCode.NO_AUTH_ERROR);
+
+        // 锁定当前用户的待确认邀请，避免通知列表和未读数并发刷新时重复补数据
+        List<SpaceUser> pendingInvitations = this.lambdaQuery()
+                .eq(SpaceUser::getUserId, loginUser.getId())
+                .eq(SpaceUser::getInviteStatus, SpaceUserInviteStatusEnum.PENDING.getValue())
+                .last("FOR UPDATE")
+                .list();
+        if (CollectionUtils.isEmpty(pendingInvitations)) {
+            return;
+        }
+
+        Set<Long> invitationIds = pendingInvitations.stream()
+                .map(SpaceUser::getId)
+                .collect(Collectors.toSet());
+        Set<Long> notifiedInvitationIds = notificationService.lambdaQuery()
+                .eq(UserNotification::getUserId, loginUser.getId())
+                .eq(UserNotification::getType, UserNotificationTypeEnum.SPACE_INVITE.name())
+                .eq(UserNotification::getActionStatus,
+                        SpaceUserInviteStatusEnum.PENDING.getValue())
+                .in(UserNotification::getRelatedId, invitationIds)
+                .list()
+                .stream()
+                .map(UserNotification::getRelatedId)
+                .collect(Collectors.toSet());
+
+        // 旧邀请没有通知记录时按现有通知格式补齐，之后即可在通知中心接受或拒绝
+        pendingInvitations.stream()
+                .filter(invitation -> !notifiedInvitationIds.contains(invitation.getId()))
+                .forEach(invitation -> {
+                    User inviter = invitation.getCreateUserId() == null
+                            ? null : userService.getById(invitation.getCreateUserId());
+                    sendInviteNotification(invitation, inviter);
+                });
+    }
+
     private void sendInviteNotification(SpaceUser invitation, User inviter) {
         Space space = spaceService.getById(invitation.getSpaceId());
         String spaceName = space == null ? String.valueOf(invitation.getSpaceId()) : space.getSpaceName();
@@ -168,7 +208,8 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
                 UserNotificationTypeEnum.SPACE_INVITE.name(), "新的空间邀请",
                 String.format("管理员「%s」邀请你加入空间「%s」，角色为%s",
                         getUserDisplayName(inviter), spaceName, roleName),
-                invitation.getId(), invitation.getSpaceId(), inviter.getId(),
+                invitation.getId(), invitation.getSpaceId(),
+                inviter == null ? invitation.getCreateUserId() : inviter.getId(),
                 SpaceUserInviteStatusEnum.PENDING.getValue());
     }
 

@@ -7,6 +7,7 @@ import com.my.picturesystembackend.exception.ErrorCode;
 import com.my.picturesystembackend.exception.ThrowUtils;
 import com.my.picturesystembackend.model.entity.User;
 import com.my.picturesystembackend.model.entity.UserNotification;
+import com.my.picturesystembackend.service.SpaceUserService;
 import com.my.picturesystembackend.service.UserNotificationService;
 import com.my.picturesystembackend.service.UserService;
 import io.swagger.annotations.ApiOperation;
@@ -33,6 +34,7 @@ import java.util.List;
 public class UserNotificationController {
 
     private final UserNotificationService notificationService;
+    private final SpaceUserService spaceUserService;
     private final UserService userService;
 
     /**
@@ -47,6 +49,7 @@ public class UserNotificationController {
     @ApiOperation(value = "查询我的通知")
     public BaseResponse<List<UserNotification>> listMyNotification(HttpServletRequest request) {
         User loginUser = userService.getLoginUser(request);
+        spaceUserService.syncPendingInviteNotifications(loginUser);
         List<UserNotification> notifications = notificationService.lambdaQuery()
                 .eq(UserNotification::getUserId, loginUser.getId())
                 .orderByDesc(UserNotification::getCreateTime)
@@ -65,6 +68,7 @@ public class UserNotificationController {
     @ApiOperation(value = "查询我的未读通知数")
     public BaseResponse<Long> getUnreadCount(HttpServletRequest request) {
         User loginUser = userService.getLoginUser(request);
+        spaceUserService.syncPendingInviteNotifications(loginUser);
         long count = notificationService.lambdaQuery()
                 .eq(UserNotification::getUserId, loginUser.getId())
                 .eq(UserNotification::getIsRead, 0)
